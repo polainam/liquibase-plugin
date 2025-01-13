@@ -1,0 +1,28 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-person-table-yaml
+      author: mezentseva.pa@edu.spbstu.ru
+      changes:
+        - createTable:
+            tableName: person_yaml
+            columns:
+              - column:
+                  name: id
+                  type: serial
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: address
+                  type: varchar(50)
+              - column:
+                  name: city
+                  type: varchar(30)
+
+  
+                  
