@@ -1,22 +1,20 @@
 const vscode = require('vscode');
+const { createGeneralStatusBarItem } = require('./src/statusBarItems');
 
 /**
  * @param {vscode.ExtensionContext} context
  */
 function activate(context) {
+    // Создаем элемент статусной строки
+    const generalStatusBarItem = createGeneralStatusBarItem();
 
-	console.log('Congratulations, your extension "liquibase-plugin" is now active!');
-
-	const disposable = vscode.commands.registerCommand('liquibase-plugin.helloWorld', function () {
-		vscode.window.showInformationMessage('Hello World from liquibase-plugin!');
-	});
-
-	context.subscriptions.push(disposable);
+    // Добавляем его в контекст для автоматической очистки при отключении расширения
+    context.subscriptions.push(generalStatusBarItem);
 }
 
 function deactivate() {}
 
 module.exports = {
-	activate,
-	deactivate
-}
+    activate,
+    deactivate
+};

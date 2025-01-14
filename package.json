@@ -9,12 +9,14 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onStartupFinished"
+],
   "main": "./extension.js",
   "contributes": {
     "commands": [{
-      "command": "liquibase-plugin.helloWorld",
-      "title": "Hello World"
+      "command": "workbench.action.quickOpen",
+        "title": "Open Command Palette with Liquibase"
     }]
   },
   "scripts": {
