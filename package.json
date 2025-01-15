@@ -17,7 +17,14 @@
     "commands": [{
       "command": "workbench.action.quickOpen",
         "title": "Open Command Palette with Liquibase"
-    }]
+    }],
+    "languages": [
+      {
+          "id": "xml",
+          "aliases": ["XML", "xml", "Liquibase XML"],
+          "extensions": [".xml"],
+          "configuration": "./src/intellisense/xml/xml-configuration.json"
+      }]
   },
   "scripts": {
     "lint": "eslint .",

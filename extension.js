@@ -1,18 +1,22 @@
 const vscode = require('vscode');
-const { createGeneralStatusBarItem } = require('./src/statusBarItems');
+const { createGeneralStatusBarItem } = require('./src/statusBar/statusBarItem');
+const { registerCompletionProvider } = require('./src/intellisense/xml/completionProvider');
 
 /**
  * @param {vscode.ExtensionContext} context
  */
 function activate(context) {
-    // Создаем элемент статусной строки
-    const generalStatusBarItem = createGeneralStatusBarItem();
+    console.log('Liquibase plugin activated.');
 
-    // Добавляем его в контекст для автоматической очистки при отключении расширения
+    const generalStatusBarItem = createGeneralStatusBarItem();
     context.subscriptions.push(generalStatusBarItem);
+
+    registerCompletionProvider(context);
 }
 
-function deactivate() {}
+function deactivate() {
+    console.log('Liquibase plugin deactivated.');
+}
 
 module.exports = {
     activate,
