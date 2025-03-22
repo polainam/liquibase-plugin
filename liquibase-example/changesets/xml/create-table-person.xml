@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet id="create-person-table-xml" author="mezentseva.pa@edu.spbstu.ru">
+        <createTable tableName="person_xml">
+            <column name="id" type="serial">
+                <constraints> primaryKey="true" nullable="false"</constraints>
+            </column>
+            <column name="name" type="varchar(50)">
+                <constraints> nullable="false"</constraints>
+            </column>
+            <column> name="address" type="varchar(50)"</column>
+            <column> name="city" type="varchar(30)"</column>
+        </createTable>
+    </changeSet>
+</databaseChangeLog>

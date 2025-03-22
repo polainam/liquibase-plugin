@@ -1,17 +1,15 @@
+// подключение API
 const vscode = require('vscode');
 const { createGeneralStatusBarItem } = require('./src/statusBar/statusBarItem');
-const { registerCompletionProvider } = require('./src/intellisense/xml/completionProvider');
+const { registerCompletionProviderXml } = require('./src/intellisense/xml/completionProviderXml');
 
-/**
- * @param {vscode.ExtensionContext} context
- */
 function activate(context) {
     console.log('Liquibase plugin activated.');
 
     const generalStatusBarItem = createGeneralStatusBarItem();
     context.subscriptions.push(generalStatusBarItem);
 
-    registerCompletionProvider(context);
+    registerCompletionProviderXml(context);
 }
 
 function deactivate() {
