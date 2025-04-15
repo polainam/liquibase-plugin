@@ -5,8 +5,6 @@
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
      
-    <include file="changesets/sql/create-table-person.sql"/>
     <include file="changesets/yaml/create-table-person.yaml"/>
     <include file="changesets/xml/create-table-person.xml"/>
-    <include file="changesets/json/create-table-person.json"/>
 </databaseChangeLog> 

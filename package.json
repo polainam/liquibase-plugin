@@ -11,20 +11,33 @@
   ],
   "activationEvents": [
     "onStartupFinished"
-],
+  ],
   "main": "./extension.js",
   "contributes": {
-    "commands": [{
-      "command": "workbench.action.quickOpen",
+    "commands": [
+      {
+        "command": "workbench.action.quickOpen",
         "title": "Open Command Palette with Liquibase"
-    }],
+      },
+      {
+        "command": "liquibase.generateChangesetSQL",
+        "title": "Liquibase: Generate SQL for Changeset"
+      }
+    ],
     "languages": [
       {
-          "id": "xml",
-          "aliases": ["XML", "xml", "Liquibase XML"],
-          "extensions": [".xml"],
-          "configuration": "./src/intellisense/xml/xml-configuration.json"
-      }]
+        "id": "xml",
+        "aliases": [
+          "XML",
+          "xml",
+          "Liquibase XML"
+        ],
+        "extensions": [
+          ".xml"
+        ],
+        "configuration": "./src/intellisense/xml/xml-configuration.json"
+      }
+    ]
   },
   "scripts": {
     "lint": "eslint .",
@@ -32,11 +45,15 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.96.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
-    "eslint": "^9.16.0",
+    "@types/vscode": "^1.96.0",
     "@vscode/test-cli": "^0.0.10",
-    "@vscode/test-electron": "^2.4.1"
+    "@vscode/test-electron": "^2.4.1",
+    "eslint": "^9.16.0"
+  },
+  "dependencies": {
+    "tmp": "^0.2.3",
+    "xml2js": "^0.6.2"
   }
 }
