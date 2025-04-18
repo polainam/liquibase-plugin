@@ -1,7 +1,7 @@
 {
   "name": "liquibase-plugin",
   "displayName": "liquibase-plugin",
-  "description": "",
+  "description": "VSCode extension for Liquibase integration",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.96.0"
@@ -24,6 +24,15 @@
         "title": "Liquibase: Generate SQL for Changeset"
       }
     ],
+    "menus": {
+      "editor/context": [
+        {
+          "when": "resourceExtname == .xml",
+          "command": "liquibase.generateChangesetSQL",
+          "group": "liquibase"
+        }
+      ]
+    },
     "languages": [
       {
         "id": "xml",
