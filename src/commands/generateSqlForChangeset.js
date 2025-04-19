@@ -3,36 +3,80 @@ const xml2js = require('xml2js');
 const fs = require('fs');
 const path = require('path');
 const cp = require('child_process');
+const os = require('os'); 
 
-/**
- * Extract changeset information from XML at the current cursor position
- * @param {string} text XML content
- * @param {number} cursorPosition Current cursor position
- * @returns {Promise<{id: string, author: string} | null>} Changeset info or null if not found
- */
+async function getLiquibasePropertiesPath() {
+  // Try to get the path from settings
+  const config = vscode.workspace.getConfiguration('liquibaseGenerator');
+  let propertiesPath = config.get('propertiesPath');
+  
+  // If not set or file doesn't exist, prompt the user
+  if (!propertiesPath || !fs.existsSync(propertiesPath)) {
+    const result = await vscode.window.showInformationMessage(
+      'Path to liquibase.properties is not set or invalid. Would you like to set it now?',
+      'Yes', 'No'
+    );
+    
+    if (result !== 'Yes') {
+      return null;
+    }
+    
+    // Open a file dialog to select the properties file
+    const fileUris = await vscode.window.showOpenDialog({
+      canSelectMany: false,
+      filters: {
+        'Properties Files': ['properties']
+      },
+      title: 'Select liquibase.properties file'
+    });
+    
+    if (!fileUris || fileUris.length === 0) {
+      return null;
+    }
+    
+    propertiesPath = fileUris[0].fsPath;
+    
+    // Save the path to settings
+    await config.update('propertiesPath', propertiesPath, true);
+  }
+  
+  return propertiesPath;
+}
+
 async function extractChangesetInfoAtCursor(text, cursorPosition) {
-  // Simple approach - look for changeset tags around cursor position
-  const beforeCursor = text.substring(0, cursorPosition);
-  const afterCursor = text.substring(cursorPosition);
-  
-  // Find the closest changeset start tag before cursor
-  const changesetStartRegex = /<changeSet[^>]*>/gi;
-  const changesetStarts = [...beforeCursor.matchAll(changesetStartRegex)];
-  if (!changesetStarts.length) return null;
-  
-  const lastChangesetStart = changesetStarts[changesetStarts.length - 1];
-  const changesetTagContent = lastChangesetStart[0];
-  
-  // Extract id and author from the tag
-  const idMatch = changesetTagContent.match(/id=["']([^"']*)["']/i);
-  const authorMatch = changesetTagContent.match(/author=["']([^"']*)["']/i);
-  
-  if (!idMatch || !authorMatch) return null;
-  
-  return {
-    id: idMatch[1],
-    author: authorMatch[1]
-  };
+  const changesetOpenRegex = /<changeSet[^>]*>/gi;
+  const changesetCloseRegex = /<\/changeSet>/gi;
+
+  const opens = [...text.matchAll(changesetOpenRegex)];
+  const closes = [...text.matchAll(changesetCloseRegex)];
+
+  if (opens.length !== closes.length) {
+    console.warn('Mismatched <changeSet> and </changeSet> tags');
+    return null;
+  }
+
+  for (let i = 0; i < opens.length; i++) {
+    const open = opens[i];
+    const close = closes[i];
+
+    const start = open.index;
+    const end = close.index + close[0].length;
+
+    if (cursorPosition >= start && cursorPosition <= end) {
+      const changesetTag = open[0];
+      const idMatch = changesetTag.match(/id=["']([^"']*)["']/i);
+      const authorMatch = changesetTag.match(/author=["']([^"']*)["']/i);
+
+      if (!idMatch || !authorMatch) return null;
+
+      return {
+        id: idMatch[1],
+        author: authorMatch[1]
+      };
+    }
+  }
+
+  return null;
 }
 
 /**
@@ -58,13 +102,17 @@ async function getAllChangesets(xmlContent) {
   }
 }
 
-/**
- * Generate SQL for a specific changeset
- */
-async function generateSqlForChangeset() {
+async function generateSqlForChangeset(contextual = false) {
   const editor = vscode.window.activeTextEditor;
   if (!editor) {
     vscode.window.showErrorMessage('Please open a changelog file with changesets');
+    return;
+  }
+
+  // Get the liquibase.properties path first
+  const propertiesPath = await getLiquibasePropertiesPath();
+  if (!propertiesPath) {
+    vscode.window.showErrorMessage('Cannot proceed without liquibase.properties');
     return;
   }
 
@@ -73,39 +121,39 @@ async function generateSqlForChangeset() {
   const workspaceFolder = path.dirname(filePath);
   
   let changesetInfo = null;
+  let cursorInChangeset = null;
   
   // First try to get changeset at cursor position
   try {
     const cursorPosition = editor.document.offsetAt(editor.selection.active);
-    changesetInfo = await extractChangesetInfoAtCursor(text, cursorPosition);
+    cursorInChangeset = await extractChangesetInfoAtCursor(text, cursorPosition);
   } catch (err) {
     console.error('Error extracting changeset at cursor:', err);
   }
   
   // If no changeset found at cursor, show a quick pick menu
-  if (!changesetInfo) {
+  if (contextual && cursorInChangeset) {
+      changesetInfo = cursorInChangeset;
+      const proceed = await vscode.window.showInformationMessage(
+        `Generate SQL for changeset ID: ${changesetInfo.id} by ${changesetInfo.author}?`,
+        'Yes', 'No'
+      );
+      
+      if (proceed !== 'Yes') return;
+  } else {
     const changesets = await getAllChangesets(text);
     if (changesets.length === 0) {
       vscode.window.showErrorMessage('No changesets found in the current file');
       return;
     }
-    
+
     const selected = await vscode.window.showQuickPick(
       changesets,
       { placeHolder: 'Select changeset to generate SQL for' }
     );
-    
     if (!selected) return; // User cancelled
     changesetInfo = { id: selected.id, author: selected.author };
-  } else {
-    // Confirm with the user if we found a changeset at cursor
-    const proceed = await vscode.window.showInformationMessage(
-      `Generate SQL for changeset ID: ${changesetInfo.id} by ${changesetInfo.author}?`,
-      'Yes', 'No'
-    );
-    
-    if (proceed !== 'Yes') return;
-  }
+  } 
   
   try {
     const parsed = await xml2js.parseStringPromise(text);
@@ -137,16 +185,17 @@ async function generateSqlForChangeset() {
 
         const tempXml = builder.buildObject(tempChangeLog);
 
+        // Используем системную временную директорию
         const tempFileName = `liquibase_temp_${Date.now()}.xml`;
-        const tempFilePath = path.join(workspaceFolder, tempFileName);
+        const tempFilePath = path.join(os.tmpdir(), tempFileName);
         fs.writeFileSync(tempFilePath, tempXml);
 
-        // Execute liquibase command
+        // Используем путь к liquibase.properties в команде
+        const liquibaseCmd = `liquibase --defaultsFile="${propertiesPath}" --changeLogFile="${tempFileName}" --searchPath="${os.tmpdir()},${workspaceFolder}" updateSql`;
+        
         return new Promise((resolve, reject) => {
-          const liquibaseCmd = `liquibase --changeLogFile="${tempFileName}" --searchPath="${workspaceFolder}" updateSql`;
-          
           cp.exec(liquibaseCmd, { cwd: workspaceFolder }, (err, stdout, stderr) => {
-            // Always clean up the temp file
+            // Всегда очищаем временный файл
             try {
               fs.unlinkSync(tempFilePath);
             } catch (unlinkErr) {
@@ -159,9 +208,7 @@ async function generateSqlForChangeset() {
               return;
             }
 
-            // FIXED: Use try-catch with async/await instead of promise chains
             try {
-              // Instead of chaining promises, use a more straightforward approach
               vscode.workspace.openTextDocument({ content: stdout, language: 'sql' })
                 .then(document => {
                   vscode.window.showTextDocument(document)
@@ -188,27 +235,7 @@ async function generateSqlForChangeset() {
   }
 }
 
-/**
- * Generate SQL for a specific changeset from context menu
- */
-async function generateSqlForChangesetContextMenu(uri) {
-  // Read the file content
-  try {
-    const fileContent = fs.readFileSync(uri.fsPath, 'utf8');
-    const document = await vscode.workspace.openTextDocument(uri);
-    await vscode.window.showTextDocument(document);
-    
-    // Use the existing function with the new context
-    const editor = vscode.window.activeTextEditor;
-    if (editor) {
-      await generateSqlForChangeset();
-    }
-  } catch (error) {
-    vscode.window.showErrorMessage(`Error opening file: ${error.message}`);
-  }
-}
-
 module.exports = {
   generateSqlForChangeset,
-  generateSqlForChangesetContextMenu
+  getLiquibasePropertiesPath
 };

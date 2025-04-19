@@ -1,7 +1,9 @@
+// extension.js
 const vscode = require('vscode');
 const { createGeneralStatusBarItem } = require('./src/statusBar/statusBarItem');
 const { registerCompletionProviderXml } = require('./src/intellisense/xml/completionProviderXml');
-const { generateSqlForChangeset, generateSqlForChangesetContextMenu } = require('./src/commands/generateSqlForChangeset');
+const { generateSqlForChangeset } = require('./src/commands/generateSqlForChangeset');
+const { getLiquibasePropertiesPath } = require('./src/commands/generateSqlForChangeset');
 
 function activate(context) {
     console.log('Liquibase plugin activated.');
@@ -17,13 +19,15 @@ function activate(context) {
         generateSqlForChangeset
     );
     context.subscriptions.push(generateSqlCommand);
-    
-    // Register command for context menu
-    const generateSqlContextCommand = vscode.commands.registerCommand(
-        'liquibase.generateChangesetSQLContext',
-        generateSqlForChangesetContextMenu
-    );
-    context.subscriptions.push(generateSqlContextCommand);
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('liquibaseGenerator.setPropertiesPath', async () => {
+          const propertiesPath = await getLiquibasePropertiesPath();
+          if (propertiesPath) {
+            vscode.window.showInformationMessage(`Liquibase properties path set to: ${propertiesPath}`);
+          }
+        })
+      );
 }
 
 function deactivate() {
