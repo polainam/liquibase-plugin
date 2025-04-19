@@ -1,8 +1,17 @@
 # liquibase-plugin-draft  
+
+## Предварительная настройка
+Перед использованием **обязательно** укажите путь до файла `liquibase.properties`.
+1. Откройте палитру команд через статус-бар или комбинацией Ctrl + Shift + P.
+2. Выберите или введите команду:
+Liquibase: Set Properties File Path
+3. В открывшемся проводнике выберите ваш файл liquibase.properties.
+
+Путь сохранится в настройках плагина и будет использоваться по умолчанию.
+
 ## Задачи
 1. Для генерации SQL Preview
-   - Настроить путь до liquibase.properties для всех файлов changeset
-   - реализовать генерацию временного файла changelog для выбранного changeset в searchPath, а не в workspace
+   - Создать реализацию для Full Preview SQL и для Specific Preview SQL
      
 ## Полезные материалы и ссылки
 1. State of Database DevOps Report 2025 (page 10, 11): https://cdn.prod.website-files.com/65c3a844357606c1b08a1e98/67eb0091b50266b291b30a32_State%20of%20Database%20DevOps%20Report%202025.pdf
