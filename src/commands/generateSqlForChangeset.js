@@ -102,6 +102,58 @@ async function getAllChangesets(xmlContent) {
   }
 }
 
+/**
+ * Extract the actual changeset SQL from the full SQL output
+ * @param {string} fullSql Full SQL output from liquibase
+ * @param {string} changesetId ID of the changeset
+ * @param {string} changesetAuthor Author of the changeset
+ * @returns {string} Extracted changeset SQL
+ */
+function extractChangesetSql(fullSql, changesetId, changesetAuthor) {
+  // Find the changeset comment line
+  const changesetRegex = new RegExp(`-- Changeset.*::${changesetId}::${changesetAuthor}`, 'i');
+  const lines = fullSql.split('\n');
+  
+  let result = [];
+  let foundChangeset = false;
+  let inChangeset = false;
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    
+    // If we find the changeset marker
+    if (changesetRegex.test(line)) {
+      foundChangeset = true;
+      inChangeset = true;
+      result.push(line);
+      continue;
+    }
+    
+    // If we're in a changeset and find the next insert into DATABASECHANGELOG or another marker,
+    // it means we've reached the end of this changeset
+    if (inChangeset && (
+        line.trim().startsWith('INSERT INTO') && 
+        line.includes('DATABASECHANGELOG') ||
+        line.trim().startsWith('-- ') && !line.trim().startsWith('-- ') ||
+        line.trim().startsWith('--*')
+      )) {
+      inChangeset = false;
+    }
+    
+    // If we're inside a changeset, add the line
+    if (inChangeset) {
+      result.push(line);
+    }
+  }
+  
+  // If we couldn't find the changeset, return a message
+  if (!foundChangeset) {
+    return `No SQL found for changeset with id=${changesetId} and author=${changesetAuthor}`;
+  }
+  
+  return result.join('\n');
+}
+
 async function generateSqlForChangeset(contextual = false) {
   const editor = vscode.window.activeTextEditor;
   if (!editor) {
@@ -133,13 +185,24 @@ async function generateSqlForChangeset(contextual = false) {
   
   // If no changeset found at cursor, show a quick pick menu
   if (contextual && cursorInChangeset) {
-      changesetInfo = cursorInChangeset;
-      const proceed = await vscode.window.showInformationMessage(
-        `Generate SQL for changeset ID: ${changesetInfo.id} by ${changesetInfo.author}?`,
-        'Yes', 'No'
-      );
-      
-      if (proceed !== 'Yes') return;
+    changesetInfo = cursorInChangeset;
+    
+    // Ask user which SQL version they want to generate
+    const sqlType = await vscode.window.showQuickPick(
+      [
+        { label: 'Full SQL', description: 'Generate complete SQL including all Liquibase operations' },
+        { label: 'Changeset SQL Only', description: 'Generate only the SQL specific to this changeset' }
+      ],
+      { 
+        placeHolder: `Select SQL type for changeset ID: ${changesetInfo.id} by ${changesetInfo.author}`
+      }
+    );
+    
+    if (!sqlType) return; // User cancelled
+    
+    const isFullSql = sqlType.label === 'Full SQL';
+    
+    await processChangeset(text, workspaceFolder, propertiesPath, changesetInfo, isFullSql);
   } else {
     const changesets = await getAllChangesets(text);
     if (changesets.length === 0) {
@@ -153,8 +216,27 @@ async function generateSqlForChangeset(contextual = false) {
     );
     if (!selected) return; // User cancelled
     changesetInfo = { id: selected.id, author: selected.author };
-  } 
-  
+    
+    // Ask user which SQL version they want to generate
+    const sqlType = await vscode.window.showQuickPick(
+      [
+        { label: 'Full SQL', description: 'Generate complete SQL including all Liquibase operations' },
+        { label: 'Changeset SQL Only', description: 'Generate only the SQL specific to this changeset' }
+      ],
+      { 
+        placeHolder: `Select SQL type for changeset ID: ${changesetInfo.id} by ${changesetInfo.author}`
+      }
+    );
+    
+    if (!sqlType) return; // User cancelled
+    
+    const isFullSql = sqlType.label === 'Full SQL';
+    
+    await processChangeset(text, workspaceFolder, propertiesPath, changesetInfo, isFullSql);
+  }
+}
+
+async function processChangeset(text, workspaceFolder, propertiesPath, changesetInfo, isFullSql) {
   try {
     const parsed = await xml2js.parseStringPromise(text);
     const changeSets = parsed.databaseChangeLog.changeSet;
@@ -171,7 +253,7 @@ async function generateSqlForChangeset(contextual = false) {
     // Show progress indicator
     vscode.window.withProgress({
       location: vscode.ProgressLocation.Notification,
-      title: `Generating SQL for changeset ${changesetInfo.id}...`,
+      title: `Generating ${isFullSql ? 'full' : 'changeset'} SQL for changeset ${changesetInfo.id}...`,
       cancellable: false
     }, async (progress) => {
       try {
@@ -209,7 +291,13 @@ async function generateSqlForChangeset(contextual = false) {
             }
 
             try {
-              vscode.workspace.openTextDocument({ content: stdout, language: 'sql' })
+              // Process the SQL output based on user choice
+              let sqlOutput = stdout;
+              if (!isFullSql) {
+                sqlOutput = extractChangesetSql(stdout, changesetInfo.id, changesetInfo.author);
+              }
+              
+              vscode.workspace.openTextDocument({ content: sqlOutput, language: 'sql' })
                 .then(document => {
                   vscode.window.showTextDocument(document)
                     .then(() => {
