@@ -2,8 +2,8 @@
 const vscode = require('vscode');
 const { createGeneralStatusBarItem } = require('./src/statusBar/statusBarItem');
 const { registerCompletionProviderXml } = require('./src/intellisense/xml/completionProviderXml');
-const { generateSqlForChangeset } = require('./src/commands/generateSqlForChangeset');
-const { getLiquibasePropertiesPath } = require('./src/commands/generateSqlForChangeset');
+const { generateSqlForChangeset } = require('./src/sql/liquibaseRunner');
+const { getLiquibasePropertiesPath } = require('./src/sql/configManager');
 
 function activate(context) {
     console.log('Liquibase plugin activated.');
@@ -13,21 +13,29 @@ function activate(context) {
 
     registerCompletionProviderXml(context);
 
-    // Register command for command palette
-    const generateSqlCommand = vscode.commands.registerCommand(
-        'liquibase.generateChangesetSQL',
-        generateSqlForChangeset
+    // Register commands for SQL generation
+    let fullSqlDisposable = vscode.commands.registerCommand(
+        'liquibaseGenerator.generateSql', 
+        () => generateSqlForChangeset(false)
     );
-    context.subscriptions.push(generateSqlCommand);
+    
+    let contextualSqlDisposable = vscode.commands.registerCommand(
+        'liquibaseGenerator.generateSqlFromContext', 
+        () => generateSqlForChangeset(true)
+    );
+    
+    context.subscriptions.push(fullSqlDisposable);
+    context.subscriptions.push(contextualSqlDisposable);
 
+    // Register command to set properties path
     context.subscriptions.push(
         vscode.commands.registerCommand('liquibaseGenerator.setPropertiesPath', async () => {
-          const propertiesPath = await getLiquibasePropertiesPath();
-          if (propertiesPath) {
-            vscode.window.showInformationMessage(`Liquibase properties path set to: ${propertiesPath}`);
-          }
+            const propertiesPath = await getLiquibasePropertiesPath();
+            if (propertiesPath) {
+                vscode.window.showInformationMessage(`Liquibase properties path set to: ${propertiesPath}`);
+            }
         })
-      );
+    );
 }
 
 function deactivate() {

@@ -15,23 +15,27 @@
   "main": "./extension.js",
   "contributes": {
     "configuration": {
-    "type": "object",
-    "title": "Liquibase Generator",
-    "properties": {
-      "liquibaseGenerator.propertiesPath": {
-        "type": "string",
-        "default": "",
-        "description": "Path to liquibase.properties file"
+      "type": "object",
+      "title": "Liquibase Generator",
+      "properties": {
+        "liquibaseGenerator.propertiesPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to liquibase.properties file"
+        }
       }
-    }
-  },
+    },
     "commands": [
       {
         "command": "workbench.action.quickOpen",
         "title": "Open Command Palette with Liquibase"
       },
       {
-        "command": "liquibase.generateChangesetSQL",
+        "command": "liquibaseGenerator.generateSql",
+        "title": "Liquibase: Generate SQL for Changeset"
+      },
+      {
+        "command": "liquibaseGenerator.generateSqlFromContext",
         "title": "Liquibase: Generate SQL for Changeset"
       },
       {
@@ -40,10 +44,17 @@
       }
     ],
     "menus": {
+      "commandPalette": [
+        {
+          "command": "liquibaseGenerator.generateSqlFromContext",
+          "when": "false"
+        }
+      ],
       "editor/context": [
         {
-          "command": "liquibase.generateChangesetSQL",
-          "group": "liquibase"
+          "command": "liquibaseGenerator.generateSqlFromContext",
+          "group": "liquibase",
+          "when": "editorLangId == xml"
         }
       ]
     },
