@@ -18,14 +18,14 @@ module.exports = [
         snippet: `<createTable tableName="\${1:table_name}">\n\t\${0}\n</createTable>`,
         documentation: "Создание новой таблицы в базе данных.",
         allowedIn: ["changeSet"], // Разрешен только внутри changeSet
-        disallowedIn: ["column", "constraints", "createTable"]
+        disallowedIn: ["createTable"]
     },
     {
         name: "column",
         snippet: `<column name="\${1:column_name}" type="\${2:column_type}">\n\t\${0}\n</column>`,
         documentation: "Определение колонки в таблице.",
         allowedIn: ["createTable"], // Разрешен только внутри createTable
-        disallowedIn: ["column", "constraints"]
+        disallowedIn: ["column"]
     },
     {
         name: "constraints",

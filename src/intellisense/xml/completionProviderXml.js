@@ -1,6 +1,6 @@
 const vscode = require('vscode');
-const { analyzeContext } = require('./contextAnalyzer');
-const { getLiquibaseTags } = require('./liquibaseTags');
+const { analyzeContext } = require('./contextAnalyzerXml');
+const { getLiquibaseTags } = require('./liquibaseTagsXml');
 
 // функция для регистрации провайдера автодополнений для работы с XML
 function registerCompletionProviderXml(context) {

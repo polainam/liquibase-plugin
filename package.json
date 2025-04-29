@@ -55,6 +55,11 @@
           "command": "liquibaseGenerator.generateSqlFromContext",
           "group": "liquibase",
           "when": "editorLangId == xml"
+        },
+        {
+          "command": "liquibaseGenerator.generateSqlFromContext",
+          "group": "liquibase",
+          "when": "editorLangId == yaml"
         }
       ]
     },
@@ -68,8 +73,19 @@
         ],
         "extensions": [
           ".xml"
+        ]
+      },
+      {
+        "id": "yaml",
+        "aliases": [
+          "YAML",
+          "yaml",
+          "Liquibase YAML"
         ],
-        "configuration": "./src/intellisense/xml/xml-configuration.json"
+        "extensions": [
+          ".yml",
+          ".yaml"
+        ]
       }
     ]
   },

@@ -1,5 +1,5 @@
 const vscode = require('vscode');
-const tags = require('./tagsConfig');
+const tags = require('./tagsConfigXml');
 
 function analyzeContext(document, position) {
   const fullText = document.getText();

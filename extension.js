@@ -1,7 +1,7 @@
-// extension.js
 const vscode = require('vscode');
 const { createGeneralStatusBarItem } = require('./src/statusBar/statusBarItem');
 const { registerCompletionProviderXml } = require('./src/intellisense/xml/completionProviderXml');
+const { registerCompletionProviderYaml } = require('./src/intellisense/yaml/completionProviderYaml');
 const { generateSqlForChangeset } = require('./src/sql/liquibaseRunner');
 const { getLiquibasePropertiesPath } = require('./src/sql/configManager');
 
@@ -12,6 +12,7 @@ function activate(context) {
     context.subscriptions.push(generalStatusBarItem);
 
     registerCompletionProviderXml(context);
+    registerCompletionProviderYaml(context);
 
     // Register commands for SQL generation
     let fullSqlDisposable = vscode.commands.registerCommand(

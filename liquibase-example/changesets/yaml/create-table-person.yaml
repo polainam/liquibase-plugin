@@ -23,6 +23,4 @@ databaseChangeLog:
               - column:
                   name: city
                   type: varchar(30)
-
-  
-                  
+  c
