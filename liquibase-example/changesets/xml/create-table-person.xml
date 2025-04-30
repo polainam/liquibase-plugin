@@ -19,7 +19,7 @@
         </createTable>
     </changeSet>
         <changeSet id="create-person-table-xml-1" author="mezentseva.pa@edu.spbstu.ru">
-        <createTable tableName="person_xml">
+        <createTable tableName="person_xml-1">
             <column name="id" type="serial">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
