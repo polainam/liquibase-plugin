@@ -12,9 +12,7 @@ Liquibase: Set Properties File Path
 // TODO описать как запускать тестовые примеры с бд
 
 ## Задачи
-1. Intellisense YAML
-   - адаптировать вывод превью sql под новый формат
-3. Intellisense JSON
+1. Intellisense JSON
    - реализовать поддержку подсказок
    - адаптировать вывод превью sql под новый формат
      
