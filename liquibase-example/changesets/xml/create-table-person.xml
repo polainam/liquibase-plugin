@@ -18,4 +18,16 @@
             <column name="city" type="varchar(30)"></column>  
         </createTable>
     </changeSet>
+        <changeSet id="create-person-table-xml-1" author="mezentseva.pa@edu.spbstu.ru">
+        <createTable tableName="person_xml">
+            <column name="id" type="serial">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="address" type="varchar(50)"></column> 
+            <column name="city" type="varchar(30)"></column>  
+        </createTable>
+    </changeSet>
 </databaseChangeLog>

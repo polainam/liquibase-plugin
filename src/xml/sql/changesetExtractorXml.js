@@ -1,4 +1,4 @@
-// Functions for finding and extracting changeset info
+// Functions for finding and extracting changeset info from XML
 
 const vscode = require('vscode');
 const xml2js = require('xml2js');
@@ -94,4 +94,4 @@ module.exports = {
   extractChangesetInfoAtCursor,
   getAllChangesets,
   findChangeset
-};
+}; 

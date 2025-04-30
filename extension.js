@@ -1,9 +1,9 @@
 const vscode = require('vscode');
 const { createGeneralStatusBarItem } = require('./src/statusBar/statusBarItem');
-const { registerCompletionProviderXml } = require('./src/intellisense/xml/completionProviderXml');
-const { registerCompletionProviderYaml } = require('./src/intellisense/yaml/completionProviderYaml');
-const { generateSqlForChangeset } = require('./src/sql/liquibaseRunner');
-const { getLiquibasePropertiesPath } = require('./src/sql/configManager');
+const { registerCompletionProviderXml } = require('./src/xml/intellisense/completionProviderXml');
+const { registerCompletionProviderYaml } = require('./src/yaml/intellisense/completionProviderYaml');
+const { generateSqlForChangeset } = require('./src/liquibaseRunner');
+const { getLiquibasePropertiesPath } = require('./src/configManager');
 
 function activate(context) {
     console.log('Liquibase plugin activated.');
