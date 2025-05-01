@@ -1,33 +1,32 @@
-<?xml version="1.0" encoding="UTF-8"?>	
-<databaseChangeLog
+<?xml version="1.0" encoding="UTF-8"?>
+<databasechangelog
     xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
-    xmlns:pro="http://www.liquibase.org/xml/ns/pro"
-    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    xmlns:pro="http://www.liquibase.org/xml/ns/pro" xsi:schemalocation="http://www.liquibase.org/xml/ns/dbchangelog
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
-    <changeSet id="create-person-table-xml" author="mezentseva.pa@edu.spbstu.ru">
-        <createTable tableName="person_xml">
+    <changeset id="create-person-table-xml" author="mezentseva.pa@edu.spbstu.ru">
+        <createtable tablename="person_xml">
             <column name="id" type="serial">
-                <constraints primaryKey="true" nullable="false"/>
+                <constraints primarykey="true" nullable="false"/>
             </column>
             <column name="name" type="varchar(50)">
                 <constraints nullable="false"/>
             </column>
-            <column name="address" type="varchar(50)"></column> 
-            <column name="city" type="varchar(30)"></column>  
-        </createTable>
-    </changeSet>
-        <changeSet id="create-person-table-xml-1" author="mezentseva.pa@edu.spbstu.ru">
-        <createTable tableName="person_xml-1">
+            <column name="address" type="varchar(50)"></column>
+            <column name="city" type="varchar(30)"></column>
+        </createtable>
+    </changeset>
+    <changeset id="create-person-table-xml-1" author="mezentseva.pa@edu.spbstu.ru">
+        <createtable tablename="person_xml-1">
             <column name="id" type="serial">
-                <constraints primaryKey="true" nullable="false"/>
+                <constraints primarykey="true" nullable="false"/>
             </column>
             <column name="name" type="varchar(50)">
                 <constraints nullable="false"/>
             </column>
-            <column name="address" type="varchar(50)"></column> 
-            <column name="city" type="varchar(30)"></column>  
-        </createTable>
-    </changeSet>
-</databaseChangeLog>
+            <column name="address" type="varchar(50)"></column>
+            <column name="city" type="varchar(30)"></column>
+        </createtable>
+    </changeset>
+</databasechangelog>

@@ -60,6 +60,11 @@
           "command": "liquibaseGenerator.generateSqlFromContext",
           "group": "liquibase",
           "when": "editorLangId == yaml"
+        },
+        {
+          "command": "liquibaseGenerator.generateSqlFromContext",
+          "group": "liquibase",
+          "when": "editorLangId == json"
         }
       ]
     },
@@ -86,6 +91,17 @@
           ".yml",
           ".yaml"
         ]
+      },
+      {
+        "id": "json",
+        "aliases": [
+          "JSON",
+          "json",
+          "Liquibase JSON"
+        ],
+        "extensions": [
+          ".json"
+        ]
       }
     ]
   },
@@ -104,6 +120,7 @@
   },
   "dependencies": {
     "js-yaml": "^4.1.0",
+    "sqlite3": "^5.1.7",
     "tmp": "^0.2.3",
     "xml2js": "^0.6.2"
   }

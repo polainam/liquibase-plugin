@@ -1,17 +1,3 @@
 databaseChangeLog:
   - include:
-      file: changesets/sql/create-table-person.sql
-  - include:
-      file: changesets/yaml/create-table-person.yaml
-  - include:
-      file: changesets/xml/create-table-person.xml
-  - include:
-      file: changesets/json/create-table-person.json
----------------------------------------------------------
-databaseChangeLog:
-  - changeSet:
-      id: "create-person-table-xml"
-      author: "your_email@example.com"
-      changes:
-        - sqlFile:
-            path: "changesets/sql/create-table-person.sql"
+      file: ../changesets/yaml/create-table-person.yaml

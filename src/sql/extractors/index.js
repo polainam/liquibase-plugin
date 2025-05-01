@@ -1,11 +1,13 @@
 const path = require('path');
 const XmlExtractor = require('./xmlExtractor');
 const YamlExtractor = require('./yamlExtractor');
+const JsonExtractor = require('./jsonExtractor');
 
 // Cache of extractors
 const extractorInstances = {
   xml: XmlExtractor,
-  yaml: YamlExtractor
+  yaml: YamlExtractor,
+  json: JsonExtractor
 };
 
 /**
@@ -15,6 +17,7 @@ function getFileFormat(filePath) {
   const ext = path.extname(filePath).toLowerCase();
   if (ext === '.xml') return 'xml';
   if (ext === '.yaml' || ext === '.yml') return 'yaml';
+  if (ext === '.json') return 'json';
   throw new Error(`Unsupported file format: ${ext}`);
 }
 
@@ -26,6 +29,19 @@ function getFileFormat(filePath) {
 function isYamlFile(filePath) {
   try {
     return getFileFormat(filePath) === 'yaml';
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
+ * Checks if a file is JSON based on extension
+ * @param {string} filePath Path to the file
+ * @returns {boolean} True if it's a JSON file
+ */
+function isJsonFile(filePath) {
+  try {
+    return getFileFormat(filePath) === 'json';
   } catch (e) {
     return false;
   }
@@ -91,6 +107,7 @@ module.exports = {
   getExtractorForFormat,
   getFileFormat,
   isYamlFile,
+  isJsonFile,
   extractChangesetInfoAtCursor,
   getAllChangesets,
   findChangeset

@@ -5,7 +5,7 @@ const cp = require('child_process');
 const path = require('path');
 
 const { getLiquibasePropertiesPath } = require('../config/configManager');
-const { extractChangesetInfoAtCursor, getAllChangesets, findChangeset, isYamlFile } = require('./extractors');
+const { extractChangesetInfoAtCursor, getAllChangesets, findChangeset, isYamlFile, isJsonFile } = require('./extractors');
 const { extractChangesetSql } = require('./sqlProcessor');
 const { createTempFile, deleteFileIfExists } = require('../common/utils');
 
@@ -31,6 +31,7 @@ async function generateSqlForChangeset(contextual = false) {
   const filePath = editor.document.uri.fsPath;
   const workspaceFolder = path.dirname(filePath);
   const isYaml = isYamlFile(filePath);
+  const isJson = isJsonFile(filePath);
   
   let changesetInfo = null;
   
@@ -58,7 +59,7 @@ async function generateSqlForChangeset(contextual = false) {
         
         const isFullSql = sqlType.label === 'Full SQL';
         
-        await processChangeset(text, workspaceFolder, propertiesPath, changesetInfo, isFullSql, isYaml, filePath);
+        await processChangeset(text, workspaceFolder, propertiesPath, changesetInfo, isFullSql, isYaml, isJson, filePath);
         return;
       }
     } catch (err) {
@@ -95,7 +96,7 @@ async function generateSqlForChangeset(contextual = false) {
   
   const isFullSql = sqlType.label === 'Full SQL';
   
-  await processChangeset(text, workspaceFolder, propertiesPath, changesetInfo, isFullSql, isYaml, filePath);
+  await processChangeset(text, workspaceFolder, propertiesPath, changesetInfo, isFullSql, isYaml, isJson, filePath);
 }
 
 /**
@@ -105,10 +106,11 @@ async function generateSqlForChangeset(contextual = false) {
  * @param {string} propertiesPath Path to liquibase.properties
  * @param {Object} changesetInfo Changeset information
  * @param {boolean} isFullSql Whether to show full SQL or just changeset SQL
- * @param {boolean} isYaml Whether the file is YAML or XML
+ * @param {boolean} isYaml Whether the file is YAML
+ * @param {boolean} isJson Whether the file is JSON
  * @param {string} filePath Path to the original file
  */
-async function processChangeset(content, workspaceFolder, propertiesPath, changesetInfo, isFullSql, isYaml, filePath) {
+async function processChangeset(content, workspaceFolder, propertiesPath, changesetInfo, isFullSql, isYaml, isJson, filePath) {
     try {
       // Show progress indicator
       vscode.window.withProgress({
@@ -148,8 +150,39 @@ async function processChangeset(content, workspaceFolder, propertiesPath, change
             
             tempContent = yaml.dump(tempYaml);
             extension = path.extname(filePath);
+          } else if (isJson) {
+            // Handle JSON content
+            try {
+              const parsedJson = JSON.parse(content);
+              if (!parsedJson || typeof parsedJson !== 'object' || !('databaseChangeLog' in parsedJson)) {
+                throw new Error("Invalid JSON changelog format: missing databaseChangeLog");
+              }
+              
+              const changeLogItems = parsedJson.databaseChangeLog;
+              if (!Array.isArray(changeLogItems)) {
+                throw new Error("Invalid JSON changelog format: databaseChangeLog is not an array");
+              }
+              
+              // Find the changeset in JSON
+              const changeset = await findChangeset(content, changesetInfo.id, changesetInfo.author, filePath);
+              if (!changeset) {
+                throw new Error(`Changeset with id=${changesetInfo.id} and author=${changesetInfo.author} not found.`);
+              }
+              
+              // Create simplified JSON with only our changeset
+              const tempJson = {
+                databaseChangeLog: [
+                  { changeSet: changeset }
+                ]
+              };
+              
+              tempContent = JSON.stringify(tempJson, null, 2);
+              extension = '.json';
+            } catch (error) {
+              throw new Error(`Failed to parse JSON: ${error.message}`);
+            }
           } else {
-            // Handle XML content (existing code)
+            // Handle XML content
             const parsed = await xml2js.parseStringPromise(content);
             
             if (!parsed.databaseChangeLog) {
@@ -178,15 +211,15 @@ async function processChangeset(content, workspaceFolder, propertiesPath, change
                 changeSet: [match]
               }
             };
-    
+
             tempContent = builder.buildObject(tempChangeLog);
             extension = '.xml';
           }
-    
+  
           // Create temp file
           const tempFilePath = createTempFile(tempContent, 'liquibase_temp', extension);
           const tempFileName = path.basename(tempFilePath);
-    
+  
           try {
             // Prepare the liquibase command
             const liquibaseCmd = `liquibase --defaultsFile="${propertiesPath}" --changeLogFile="${tempFileName}" --searchPath="${path.dirname(tempFilePath)},${workspaceFolder}" updateSql`;
@@ -195,13 +228,13 @@ async function processChangeset(content, workspaceFolder, propertiesPath, change
               cp.exec(liquibaseCmd, { cwd: workspaceFolder }, (err, stdout, stderr) => {
                 // Always clean up the temp file
                 deleteFileIfExists(tempFilePath);
-    
+  
                 if (err) {
                   vscode.window.showErrorMessage(`Liquibase error: ${stderr}`);
                   reject(err);
                   return;
                 }
-    
+  
                 try {
                   // Process the SQL output based on user choice
                   let sqlOutput = stdout;

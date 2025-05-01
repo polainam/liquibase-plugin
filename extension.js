@@ -1,7 +1,6 @@
 const vscode = require('vscode');
 const { createGeneralStatusBarItem } = require('./src/ui/statusBar/statusBarItem');
-const { registerCompletionProviderXml } = require('./src/intellisense/xml/completionProviderXml');
-const { registerCompletionProviderYaml } = require('./src/intellisense/yaml/completionProviderYaml');
+const { registerAllCompletionProviders } = require('./src/intellisense');
 const { generateSqlForChangeset } = require('./src/sql/liquibaseRunner');
 const { getLiquibasePropertiesPath } = require('./src/config/configManager');
 
@@ -11,8 +10,8 @@ function activate(context) {
     const generalStatusBarItem = createGeneralStatusBarItem();
     context.subscriptions.push(generalStatusBarItem);
 
-    registerCompletionProviderXml(context);
-    registerCompletionProviderYaml(context);
+    // Регистрируем провайдеры автодополнения для всех форматов
+    registerAllCompletionProviders(context);
 
     // Register commands for SQL generation
     let fullSqlDisposable = vscode.commands.registerCommand(
