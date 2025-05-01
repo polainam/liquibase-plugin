@@ -24,7 +24,13 @@ function getLiquibaseTags(contextData) {
     }).map(tag => {
         const item = new vscode.CompletionItem(tag.name, vscode.CompletionItemKind.Snippet);
         item.insertText = new vscode.SnippetString(tag.snippet);
-        item.documentation = tag.documentation;
+        item.documentation = new vscode.MarkdownString(tag.documentation);
+        // Сохраняем конфигурацию тега в команде
+        item.command = {
+            command: 'liquibase.storeTagConfig',
+            title: 'Store Tag Config',
+            arguments: [tag]
+        };
         return item;
     });
 }
