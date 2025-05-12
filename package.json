@@ -22,6 +22,79 @@
           "type": "string",
           "default": "",
           "description": "Path to liquibase.properties file"
+        },
+        "liquibaseGenerator.defaultChangelogFormat": {
+          "type": "string",
+          "default": "xml",
+          "enum": [
+            "xml",
+            "yaml",
+            "json",
+            "sql"
+          ],
+          "description": "Default format for changelog files"
+        },
+        "liquibaseGenerator.defaultChangesetFormat": {
+          "type": "string",
+          "default": "xml",
+          "enum": [
+            "xml",
+            "yaml",
+            "json",
+            "sql"
+          ],
+          "description": "Default format for changeset files"
+        },
+        "liquibaseGenerator.changelogNamingPattern": {
+          "type": "string",
+          "default": "changelog-{date}-{name}.{ext}",
+          "description": "Pattern for changelog filenames"
+        },
+        "liquibaseGenerator.changesetNamingPattern": {
+          "type": "string",
+          "default": "changeset-{date}-{name}.{ext}",
+          "description": "Pattern for changeset filenames"
+        },
+        "liquibaseGenerator.dateFormatInFilenames": {
+          "type": "string",
+          "default": "YYYYMMDD",
+          "description": "Date format in filenames (using moment.js format)"
+        },
+        "liquibaseGenerator.projectStructureApproach": {
+          "type": "string",
+          "default": "Object-oriented",
+          "enum": [
+            "Object-oriented",
+            "Release-oriented",
+            "Custom"
+          ],
+          "description": "Project structure approach for organizing changelog and changeset files"
+        },
+        "liquibaseGenerator.changelogRootPath": {
+          "type": "string",
+          "default": "db/changelog",
+          "description": "Root directory for changelog files (relative to workspace)"
+        },
+        "liquibaseGenerator.changesetRootPath": {
+          "type": "string",
+          "default": "db/changelog/changesets",
+          "description": "Root directory for changeset files (relative to workspace)"
+        },
+        "liquibaseGenerator.objectDirectories": {
+          "type": "object",
+          "default": {
+            "tables": "tables",
+            "indexes": "indexes",
+            "views": "views",
+            "procedures": "procedures",
+            "functions": "functions"
+          },
+          "description": "Object directories for object-oriented approach"
+        },
+        "liquibaseGenerator.defaultAuthor": {
+          "type": "string",
+          "default": "",
+          "description": "Default author for changelogs and changesets"
         }
       }
     },
@@ -41,12 +114,68 @@
       {
         "command": "liquibaseGenerator.setPropertiesPath",
         "title": "Liquibase: Set Properties File Path"
+      },
+      {
+        "command": "liquibaseGenerator.setupExtension",
+        "title": "Liquibase: Run Full Setup Wizard"
+      },
+      {
+        "command": "liquibaseGenerator.createChangelog",
+        "title": "Liquibase: Create Changelog"
+      },
+      {
+        "command": "liquibaseGenerator.configureFormats",
+        "title": "Liquibase: Configure Default Formats"
+      },
+      {
+        "command": "liquibaseGenerator.configureNaming",
+        "title": "Liquibase: Configure Naming Patterns"
+      },
+      {
+        "command": "liquibaseGenerator.configureAuthor",
+        "title": "Liquibase: Configure Default Author"
+      },
+      {
+        "command": "liquibaseGenerator.configureStructure",
+        "title": "Liquibase: Configure Project Structure"
+      },
+      {
+        "command": "liquibaseGenerator.showSettings",
+        "title": "Liquibase: Plugin Settings"
       }
     ],
     "menus": {
       "commandPalette": [
         {
           "command": "liquibaseGenerator.generateSqlFromContext",
+          "when": "false"
+        },
+        {
+          "command": "liquibaseGenerator.setPropertiesPath",
+          "when": "false"
+        },
+        {
+          "command": "liquibaseGenerator.configureFormats",
+          "when": "false"
+        },
+        {
+          "command": "liquibaseGenerator.configureNaming",
+          "when": "false"
+        },
+        {
+          "command": "liquibaseGenerator.configureAuthor",
+          "when": "false"
+        },
+        {
+          "command": "liquibaseGenerator.configureStructure",
+          "when": "false"
+        },
+        {
+          "command": "liquibaseGenerator.setupExtension",
+          "when": "false"
+        },
+        {
+          "command": "liquibaseGenerator.createChangelog",
           "when": "false"
         }
       ],
@@ -65,6 +194,13 @@
           "command": "liquibaseGenerator.generateSqlFromContext",
           "group": "liquibase",
           "when": "editorLangId == json"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "liquibaseGenerator.createChangelog",
+          "group": "liquibase",
+          "when": "explorerResourceIsFolder || resourceLangId"
         }
       ]
     },
@@ -120,6 +256,7 @@
   },
   "dependencies": {
     "js-yaml": "^4.1.0",
+    "moment": "^2.30.1",
     "sqlite3": "^5.1.7",
     "tmp": "^0.2.3",
     "xml2js": "^0.6.2"

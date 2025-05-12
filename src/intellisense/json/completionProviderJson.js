@@ -13,12 +13,10 @@ function isIndentationValid(tagConfig, contextData, parentTag) {
     const { tagIndentations, currentIndentation } = contextData;
     const parentIndentation = parentTag ? tagIndentations[parentTag]?.indentation : 0;
     
-    // Для корневого тега
     if (tagConfig.indentationRules.type === 'absolute') {
         return currentIndentation === tagConfig.indentationRules.spaces;
     }
     
-    // Для относительных отступов
     if (tagConfig.indentationRules.type === 'relative') {
         const expectedIndentation = parentIndentation + tagConfig.indentationRules.spaces;
         return currentIndentation === expectedIndentation;
