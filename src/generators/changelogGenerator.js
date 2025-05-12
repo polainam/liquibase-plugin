@@ -4,7 +4,7 @@ const vscode = require('vscode');
 const fs = require('fs');
 const path = require('path');
 const moment = require('moment');
-const { formatFilename, ensureDirectoryExists, getExtensionForFormat, findRootChangelog, getRelativePath } = require('../common/fileUtils');
+const { formatFilename, ensureDirectoryExists, getExtensionForFormat, findRootChangelog, getRelativePath, findAllChangelogs } = require('../common/fileUtils');
 const { getTemplateContent } = require('./templateManager');
 
 /**
@@ -13,9 +13,7 @@ const { getTemplateContent } = require('./templateManager');
  * @param {string} [options.targetDirectory] Target directory for the changelog
  * @param {string} [options.name] Name for the changelog
  * @param {string} [options.format] Format of the changelog (xml, yaml, json, sql)
- * @param {string} [options.description] Description of the changelog
- * @param {string} [options.type] Type of the changelog (root, object, release, custom)
- * @param {Object} [options.typeDetails] Details specific to the changelog type
+ * @param {boolean} [options.isRoot] Whether this is a root changelog
  * @returns {Promise<string|null>} Path to the generated changelog or null if failed
  */
 async function generateChangelog(options) {
@@ -29,184 +27,108 @@ async function generateChangelog(options) {
         // Get file extension
         const extension = getExtensionForFormat(format);
         
-        // Prompt for name if not provided
-        let name = options.name;
-        if (!name) {
-            name = await vscode.window.showInputBox({
-                title: 'Changelog Name',
-                prompt: 'Enter a name for the changelog',
-                placeHolder: 'my-changelog'
-            });
-            
-            if (!name) {
-                return null; // User canceled
-            }
-        }
-        
-        // Get description if not provided
-        let description = options.description;
-        if (!description) {
-            description = await vscode.window.showInputBox({
-                title: 'Changelog Description',
-                prompt: 'Enter a description for the changelog (optional)',
-                placeHolder: 'Description of changelog purpose'
-            });
-        }
-        
-        // Get the changelog type if not provided
-        let type = options.type;
-        let typeDetails = options.typeDetails || {};
-        
-        if (!type) {
-            const typeOptions = [
-                { label: 'Root Changelog', detail: 'Main changelog that includes other changelogs', value: 'root' },
-                { label: 'Object Changelog', detail: 'Changelog for specific object type (tables, views, etc.)', value: 'object' },
-                { label: 'Release Changelog', detail: 'Changelog for a specific release version', value: 'release' },
-                { label: 'Custom Changelog', detail: 'Custom changelog type', value: 'custom' }
-            ];
-            
-            const selectedType = await vscode.window.showQuickPick(typeOptions, {
-                placeHolder: 'Select changelog type',
-                title: 'Changelog Type'
-            });
-            
-            if (!selectedType) {
-                return null; // User canceled
-            }
-            
-            type = selectedType.value;
-            
-            // Get additional type-specific details
-            if (type === 'object') {
-                // Get object type
-                const objectTypeOptions = [
-                    { label: 'Tables', value: 'tables' },
-                    { label: 'Indexes', value: 'indexes' },
-                    { label: 'Views', value: 'views' },
-                    { label: 'Procedures', value: 'procedures' },
-                    { label: 'Functions', value: 'functions' },
-                    { label: 'Other', value: 'other' }
-                ];
-                
-                const selectedObjectType = await vscode.window.showQuickPick(objectTypeOptions, {
-                    placeHolder: 'Select object type',
-                    title: 'Object Type'
-                });
-                
-                if (!selectedObjectType) {
-                    return null; // User canceled
-                }
-                
-                typeDetails.objectType = selectedObjectType.value;
-                
-                if (selectedObjectType.value === 'other') {
-                    const customType = await vscode.window.showInputBox({
-                        title: 'Custom Object Type',
-                        prompt: 'Enter a custom object type',
-                        placeHolder: 'sequences'
-                    });
-                    
-                    if (!customType) {
-                        return null; // User canceled
-                    }
-                    
-                    typeDetails.objectType = customType;
-                }
-                
-                // Get object name (optional)
-                typeDetails.objectName = await vscode.window.showInputBox({
-                    title: 'Object Name',
-                    prompt: 'Enter a name for the object (optional)',
-                    placeHolder: 'users'
-                });
-            } else if (type === 'release') {
-                // Get release version
-                typeDetails.version = await vscode.window.showInputBox({
-                    title: 'Release Version',
-                    prompt: 'Enter the release version',
-                    placeHolder: '1.0'
-                });
-                
-                if (!typeDetails.version) {
-                    return null; // User canceled
-                }
-                
-                // Get release description (optional)
-                typeDetails.releaseDescription = await vscode.window.showInputBox({
-                    title: 'Release Description',
-                    prompt: 'Enter a description for the release (optional)',
-                    placeHolder: 'Initial release'
-                });
-            } else if (type === 'custom') {
-                // Get custom type
-                typeDetails.customType = await vscode.window.showInputBox({
-                    title: 'Custom Type',
-                    prompt: 'Enter a custom type for the changelog',
-                    placeHolder: 'migrations'
-                });
-                
-                if (!typeDetails.customType) {
-                    return null; // User canceled
-                }
-            }
-        }
-        
-        // Determine changelog destination directory
-        let targetDirectory = options.targetDirectory;
-        if (!targetDirectory) {
-            // Get default root path from settings
-            const defaultRoot = config.get('changelogRootPath') || 'db/changelog';
-            
-            // For object-oriented approach, use object-specific directory
-            if (type === 'object' && typeDetails.objectType) {
-                const objectDirs = config.get('objectDirectories') || {};
-                const objectTypeDir = objectDirs[typeDetails.objectType] || typeDetails.objectType;
-                targetDirectory = path.join(defaultRoot, objectTypeDir);
-            } else if (type === 'release' && typeDetails.version) {
-                // For release-oriented approach, use version directory
-                const versionBase = typeDetails.version.split('.')[0];
-                targetDirectory = path.join(defaultRoot, `${versionBase}.X`);
-            } else {
-                targetDirectory = defaultRoot;
-            }
-        }
+        // Get target directory
+        const targetDirectory = options.targetDirectory || config.get('changelogRootPath') || 'db/changelog';
         
         // Ensure directory exists
         if (!ensureDirectoryExists(targetDirectory)) {
             throw new Error(`Failed to create directory: ${targetDirectory}`);
         }
         
-        // Generate filename using pattern
-        const namingPattern = config.get('changelogNamingPattern') || 'changelog-{date}-{name}.{ext}';
+        // Get author from settings
+        const author = config.get('defaultAuthor') || process.env.USER || process.env.USERNAME || 'unknown';
         
-        // Add type info to filename variables if applicable
+        // Generate preview filename pattern for InputBox
+        const namingPattern = config.get('changelogNamingPattern') || 'changelog-{date}-{name}.{ext}';
+        const dateFormat = config.get('dateFormatInFilenames') || 'YYYYMMDD';
+        const dateValue = moment().format(dateFormat);
+        
+        // Ask if user wants to create a root changelog or a regular one
+        const isRoot = await vscode.window.showQuickPick([
+            { label: 'Root Changelog', detail: 'Main changelog that includes other changelogs', value: true },
+            { label: 'Regular Changelog', detail: 'Changelog that can be included in a root changelog', value: false }
+        ], {
+                title: 'Changelog Type'
+            });
+            
+        if (!isRoot) {
+                return null; // User canceled
+            }
+            
+        // Define the type based on user choice
+        const type = isRoot.value ? 'root' : 'custom';
+        
+        // Prompt for name with live preview if not provided
+        let name = options.name;
+        let filename = '';
+        
+        if (!name) {
+            // We'll use an input box with value changed handler to show preview
+            const inputBox = vscode.window.createInputBox();
+            inputBox.title = 'Changelog Name';
+            inputBox.prompt = 'Enter a name for the changelog';
+            
+            // Use a promise to handle the async inputBox
+            name = await new Promise(resolve => {
+                inputBox.onDidChangeValue(value => {
+                    if (value) {
+                        // Generate preview with current value
+                        const previewVars = {
+                            name: value,
+                            ext: extension,
+                            author: author,
+                            date: dateValue,
+                            object: value,
+                            release: value
+                        };
+                        
+                        filename = formatFilename(namingPattern, previewVars);
+                        // Use title to show preview without error styling
+                        inputBox.title = `Changelog Name - Preview: ${filename}`;
+                    } else {
+                        inputBox.title = 'Changelog Name';
+                    }
+                });
+                
+                inputBox.onDidAccept(() => {
+                    const value = inputBox.value;
+                    inputBox.hide();
+                    resolve(value);
+                });
+                
+                inputBox.onDidHide(() => {
+                    resolve(inputBox.value);
+                });
+                
+                inputBox.show();
+            });
+            
+            if (!name) {
+                return null; // User canceled
+            }
+        } else {
+            // If name was provided as an option, just generate the filename
         const filenameVariables = {
             name: name,
             ext: extension,
-            author: process.env.USER || process.env.USERNAME || 'unknown'
-        };
-        
-        // Add type-specific details to filename
-        if (type === 'object' && typeDetails.objectType) {
-            filenameVariables.objectType = typeDetails.objectType;
-            if (typeDetails.objectName) {
-                filenameVariables.objectName = typeDetails.objectName;
-            }
-        } else if (type === 'release' && typeDetails.version) {
-            filenameVariables.version = typeDetails.version;
+                author: author,
+                date: dateValue,
+                object: name,
+                release: name
+            };
+            
+            filename = formatFilename(namingPattern, filenameVariables);
         }
         
-        const filename = formatFilename(namingPattern, filenameVariables);
         const changelogPath = path.join(targetDirectory, filename);
         
         // Generate content
         const templateData = {
             name: name,
-            description: description || '',
+            description: '', // Description is not required
             date: moment().format('YYYY-MM-DD HH:mm:ss'),
-            author: process.env.USER || process.env.USERNAME || 'unknown',
-            type: type,
-            typeDetails: typeDetails
+            author: author,
+            type: type
         };
         
         // Get appropriate template for the changelog type
@@ -220,17 +142,26 @@ async function generateChangelog(options) {
         // Write content to file
         fs.writeFileSync(changelogPath, content);
         
-        // If this is not a root changelog, try to find a root changelog and update it
-        if (type !== 'root') {
-            await updateRootChangelog(changelogPath, format);
+        // If this is not a root changelog, try to find parent changelogs and let user choose
+        if (!isRoot.value) {
+            const { connected, parentPath } = await connectToParentChangelog(changelogPath, format, targetDirectory);
+            
+            // If connected to a parent, show parent changelog first, then the new one
+            if (connected && parentPath) {
+                // Open both files side by side
+                await openFilesInSplitView(parentPath, changelogPath);
+            } else {
+                // If not connected, just open the new changelog
+                const doc = await vscode.workspace.openTextDocument(changelogPath);
+                await vscode.window.showTextDocument(doc);
+            }
+        } else {
+            // For root changelogs, just open the new file
+            const doc = await vscode.workspace.openTextDocument(changelogPath);
+            await vscode.window.showTextDocument(doc);
         }
         
-        // Open the file in editor
-        const doc = await vscode.workspace.openTextDocument(changelogPath);
-        await vscode.window.showTextDocument(doc);
-        
-        // Show success message
-        vscode.window.showInformationMessage(`Changelog created: ${filename}`);
+        // No success message
         
         return changelogPath;
     } catch (error) {
@@ -241,66 +172,263 @@ async function generateChangelog(options) {
 }
 
 /**
- * Update root changelog to include the new changelog
+ * Find parent changelogs and let user choose which one to connect to
  * @param {string} changelogPath Path to the new changelog
  * @param {string} format Format of the new changelog
- * @returns {Promise<boolean>} True if the root changelog was updated
+ * @param {string} targetDirectory Directory where the changelog was created
+ * @returns {Promise<{connected: boolean, parentPath: string|null}>} Connection status and parent path
  */
-async function updateRootChangelog(changelogPath, format) {
+async function connectToParentChangelog(changelogPath, format, targetDirectory) {
     try {
-        // Find root changelog
-        const rootChangelog = await findRootChangelog();
+        // Find all potential parent changelogs
+        const parentChangelogs = await findParentChangelogs(targetDirectory, changelogPath);
         
-        if (!rootChangelog) {
-            const createRoot = await vscode.window.showInformationMessage(
-                'No root changelog found. Would you like to create one?',
-                'Yes', 'No'
-            );
+        if (parentChangelogs.length === 0) {
+            // No parent changelogs found, just proceed without connecting
+            console.log('No parent changelogs found in the directory hierarchy. The changelog will remain standalone.');
+            return { connected: false, parentPath: null };
+        } 
+        else if (parentChangelogs.length === 1) {
+            // Only one parent changelog found, ask if user wants to connect to it
+            const parentPath = parentChangelogs[0];
+            const parentName = path.basename(parentPath);
             
-            if (createRoot === 'Yes') {
-                const rootFormat = format; // Use same format as the new changelog
-                const config = vscode.workspace.getConfiguration('liquibaseGenerator');
-                const defaultRoot = config.get('changelogRootPath') || 'db/changelog';
-                
-                // Create root changelog with appropriate properties
-                const rootPath = await generateChangelog({
-                    targetDirectory: defaultRoot,
-                    name: 'master',
-                    format: rootFormat,
-                    description: 'Master changelog file that includes all other changelogs',
-                    type: 'root'
-                });
-                
-                if (rootPath) {
-                    return await updateRootChangelog(changelogPath, format);
-                }
+            const connectChoice = await vscode.window.showQuickPick([
+                { label: 'Yes', description: `Connect to ${parentName}` },
+                { label: 'No', description: 'Do not connect' }
+            ], {
+                placeHolder: `Found parent changelog: ${parentName}. Connect to it?`,
+                title: 'Connect to Parent Changelog'
+            });
+            
+            if (connectChoice && connectChoice.label === 'Yes') {
+                const connected = await addToParentChangelog(parentPath, changelogPath);
+                return { connected, parentPath: connected ? parentPath : null };
             }
             
-            return false;
+            return { connected: false, parentPath: null };
+        } 
+        else {
+            // Multiple parent changelogs found, let user choose
+            const items = parentChangelogs.map(file => ({
+                label: path.basename(file),
+                description: file,
+                file: file
+            }));
+            
+            // Add option to not connect to any parent
+            items.push({
+                label: 'Don\'t connect to any parent changelog',
+                description: 'Leave the changelog standalone',
+                file: null
+            });
+            
+            const selected = await vscode.window.showQuickPick(items, {
+                placeHolder: 'Select parent changelog to connect to',
+                title: 'Connect to Parent Changelog'
+            });
+            
+            if (selected && selected.file) {
+                const connected = await addToParentChangelog(selected.file, changelogPath);
+                return { connected, parentPath: connected ? selected.file : null };
+            }
+            
+            return { connected: false, parentPath: null };
+        }
+    } catch (error) {
+        console.error('Error connecting to parent changelog:', error);
+        // Don't show error message to user, just log it
+        return { connected: false, parentPath: null };
+    }
+}
+
+/**
+ * Find potential parent changelogs for the given directory
+ * @param {string} targetDirectory Directory where the changelog was created
+ * @param {string} newChangelogPath Path to the newly created changelog (to exclude from results)
+ * @returns {Promise<string[]>} Array of parent changelog paths
+ */
+async function findParentChangelogs(targetDirectory, newChangelogPath) {
+    try {
+        // Get configuration
+        const config = vscode.workspace.getConfiguration('liquibaseGenerator');
+        
+        // Get all formats
+        const formats = ['xml', 'yaml', 'yml', 'json'];
+        
+        // Get all potential parent directories (current and up)
+        const parentDirs = [];
+        let currentDir = targetDirectory;
+        
+        // Add current directory first
+        parentDirs.push(currentDir);
+        
+        // Get workspace folders
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        const workspacePath = workspaceFolders ? workspaceFolders[0].uri.fsPath : '';
+        
+        // Add parent directories up to workspace root
+        while (currentDir !== workspacePath && path.dirname(currentDir) !== currentDir) {
+            currentDir = path.dirname(currentDir);
+            parentDirs.push(currentDir);
+            
+            // Stop if we reached the workspace root
+            if (currentDir === workspacePath) {
+                break;
+            }
         }
         
-        // Check if root changelog has the right format
-        const rootFormat = path.extname(rootChangelog).substring(1);
+        // Collect all potential parent changelogs by directory level
+        const changelogsByLevel = {};
         
-        // Get relative path from root to the new changelog
-        const relativePath = getRelativePath(rootChangelog, changelogPath);
+        // For each directory level, find potential changelog files
+        for (let i = 0; i < parentDirs.length; i++) {
+            const dir = parentDirs[i];
+            const levelChangelogs = [];
+            
+            try {
+                const files = fs.readdirSync(dir);
+                
+                for (const file of files) {
+                    const filePath = path.join(dir, file);
+                    
+                    // Skip directories
+                    if (fs.statSync(filePath).isDirectory()) {
+                        continue;
+                    }
+                    
+                    // Skip the newly created changelog
+                    if (newChangelogPath && filePath === newChangelogPath) {
+                        continue;
+                    }
+                    
+                    // Check file extension
+                    const ext = path.extname(file).substring(1).toLowerCase();
+                    if (!formats.includes(ext)) {
+                        continue;
+                    }
+                    
+                    // Check if the file name matches changelog pattern
+                    // Either it matches the naming pattern from settings or it contains specific keywords
+                    const fileName = path.basename(file).toLowerCase();
+                    
+                    // Check if the file is a potential parent changelog
+                    const isParentChangelog = isChangelog(filePath, fileName);
+                    
+                    if (isParentChangelog) {
+                        levelChangelogs.push(filePath);
+                    }
+                }
+            } catch (error) {
+                console.error(`Error reading directory ${dir}:`, error);
+            }
+            
+            // If we found changelogs at this level, store them
+            if (levelChangelogs.length > 0) {
+                changelogsByLevel[i] = levelChangelogs;
+            }
+        }
         
-        // Read the root changelog content
-        const rootContent = fs.readFileSync(rootChangelog, 'utf8');
+        // Get the closest level with changelogs
+        const levels = Object.keys(changelogsByLevel).map(Number).sort();
+        
+        if (levels.length === 0) {
+            // No changelogs found at any level
+            return [];
+        }
+        
+        // Return changelogs from the closest level
+        return changelogsByLevel[levels[0]];
+    } catch (error) {
+        console.error('Error finding parent changelogs:', error);
+        return [];
+    }
+}
+
+/**
+ * Check if a file is a potential changelog for inclusion
+ * @param {string} filePath Path to the file
+ * @param {string} fileName Name of the file (lowercase)
+ * @returns {boolean} True if the file is a potential changelog
+ */
+function isChangelog(filePath, fileName) {
+    try {
+        // Get configuration
+        const config = vscode.workspace.getConfiguration('liquibaseGenerator');
+        
+        // Get changelog naming pattern
+        const namingPattern = config.get('changelogNamingPattern') || 'changelog-{date}-{name}.{ext}';
+        
+        // Convert naming pattern to a rough regex by replacing variables with wildcards
+        const patternRegex = namingPattern
+            .replace(/\{date\}/g, '.*')
+            .replace(/\{name\}/g, '.*')
+            .replace(/\{author\}/g, '.*') 
+            .replace(/\{ext\}/g, '.*')
+            .replace(/\{object\}/g, '.*')
+            .replace(/\{release\}/g, '.*')
+            .replace(/\./g, '\\.')
+            .replace(/\-/g, '\\-');
+        
+        const regex = new RegExp(`^${patternRegex}$`, 'i');
+        
+        // Check if the filename matches the pattern
+        if (regex.test(fileName)) {
+            return true;
+        }
+        
+        // Check if it contains changelog keywords in filename
+        if (fileName.includes('changelog') || 
+            fileName.includes('master') || 
+            fileName.includes('root')) {
+            return true;
+        }
+        
+        // Check file content for include statements
+        const content = fs.readFileSync(filePath, 'utf8');
+        if (content.includes('<include') || 
+            content.includes('- include:') ||
+            content.includes('"include"')) {
+            return true;
+        }
+        
+        return false;
+    } catch (error) {
+        console.error(`Error checking if ${filePath} is a changelog:`, error);
+        return false;
+    }
+}
+
+/**
+ * Add the changelog to a parent changelog
+ * @param {string} parentPath Path to the parent changelog
+ * @param {string} changelogPath Path to the changelog to add
+ * @returns {Promise<boolean>} True if added successfully
+ */
+async function addToParentChangelog(parentPath, changelogPath) {
+    try {
+        // Get relative path from parent to the new changelog
+        const relativePath = getRelativePath(parentPath, changelogPath);
+        
+        // Read the parent changelog content
+        const parentContent = fs.readFileSync(parentPath, 'utf8');
         
         // Check if the changelog is already included
-        if (rootContent.includes(relativePath)) {
-            vscode.window.showInformationMessage('Changelog is already included in the root changelog.');
-            return false;
+        if (parentContent.includes(relativePath)) {
+            // Already included, no need to show message
+            return true;
         }
         
-        // Update the root changelog
+        // Get file extension to determine format
+        const parentExt = path.extname(parentPath).substring(1).toLowerCase();
+        
+        // Update the parent changelog
         let updatedContent;
         
-        switch (rootFormat) {
+        switch (parentExt) {
             case 'xml':
                 // Add include tag before the closing databaseChangeLog tag
-                updatedContent = rootContent.replace(
+                updatedContent = parentContent.replace(
                     /<\/databaseChangeLog>\s*$/,
                     `    <include file="${relativePath}"/>\n</databaseChangeLog>\n`
                 );
@@ -309,35 +437,61 @@ async function updateRootChangelog(changelogPath, format) {
             case 'yaml':
             case 'yml':
                 // Add include item at the end
-                updatedContent = rootContent + `\n- include:\n    file: ${relativePath}\n`;
+                updatedContent = parentContent + `\n  - include:\n      file: ${relativePath}\n`;
                 break;
                 
             case 'json':
                 // Add include to the databaseChangeLog array
                 // This is more complex and would require parsing the JSON
                 // Simplified version:
-                const jsonObj = JSON.parse(rootContent);
+                const jsonObj = JSON.parse(parentContent);
                 if (Array.isArray(jsonObj.databaseChangeLog)) {
                     jsonObj.databaseChangeLog.push({ include: { file: relativePath } });
                     updatedContent = JSON.stringify(jsonObj, null, 2);
                 } else {
-                    throw new Error('Invalid root changelog JSON structure');
+                    throw new Error('Invalid parent changelog JSON structure');
                 }
                 break;
                 
             default:
-                throw new Error(`Unsupported format for root changelog: ${rootFormat}`);
+                throw new Error(`Unsupported format for parent changelog: ${parentExt}`);
         }
         
         // Write updated content back to the file
-        fs.writeFileSync(rootChangelog, updatedContent);
+        fs.writeFileSync(parentPath, updatedContent);
         
-        vscode.window.showInformationMessage(`Changelog was added to root changelog: ${path.basename(rootChangelog)}`);
+        // Return true to indicate successful connection, no message
         return true;
     } catch (error) {
-        console.error('Error updating root changelog:', error);
-        vscode.window.showErrorMessage(`Failed to update root changelog: ${error.message}`);
+        console.error('Error adding to parent changelog:', error);
+        // Don't show error message to user, just log it
         return false;
+    }
+}
+
+/**
+ * Open two files as tabs
+ * @param {string} file1 Path to first file
+ * @param {string} file2 Path to second file
+ */
+async function openFilesInSplitView(file1, file2) {
+    try {
+        // Open first file
+        const doc1 = await vscode.workspace.openTextDocument(file1);
+        await vscode.window.showTextDocument(doc1, { preview: false });
+        
+        // Open second file in the same column
+        const doc2 = await vscode.workspace.openTextDocument(file2);
+        await vscode.window.showTextDocument(doc2, { 
+            viewColumn: vscode.window.activeTextEditor?.viewColumn,
+            preview: false  // Prevent preview mode to ensure it opens as a stable tab
+        });
+    } catch (error) {
+        console.error('Error opening files as tabs:', error);
+        
+        // Fallback to regular opening
+        const doc = await vscode.workspace.openTextDocument(file2);
+        await vscode.window.showTextDocument(doc);
     }
 }
 

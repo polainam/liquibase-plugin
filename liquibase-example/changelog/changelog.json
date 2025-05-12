@@ -1,10 +1,9 @@
 {
-    "databaseChangeLog": [
-      {
-        "include": {
-          "file": "../changesets/json/create-table-person.json"
-        }
+  "databaseChangeLog": [
+    {
+      "include": {
+        "file": "../changesets/json/create-table-person.json"
       }
-    ]
-  }
-  
+    }
+  ]
+}

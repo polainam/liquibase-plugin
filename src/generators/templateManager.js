@@ -66,81 +66,26 @@ function getUserTemplate(format, fileType, templateType) {
  * @returns {string} Template content
  */
 function getBuiltInTemplate(format, fileType, templateType) {
-    // Provide default templates for different formats and types
-    
-    // XML templates
-    if (format === 'xml') {
-        if (fileType === 'changelog') {
-            if (templateType === 'root') {
-                return getXmlRootChangelogTemplate();
-            } else if (templateType === 'object') {
-                return getXmlObjectChangelogTemplate();
-            } else if (templateType === 'release') {
-                return getXmlReleaseChangelogTemplate();
-            } else {
-                return getXmlCustomChangelogTemplate();
-            }
-        } else if (fileType === 'changeset') {
-            // For changeset templates, to be implemented
-            return '';
+    // Get the appropriate template based on format
+    if (fileType === 'changelog') {
+        switch (format.toLowerCase()) {
+            case 'xml':
+                return getXmlChangelogTemplate();
+            case 'yaml':
+            case 'yml':
+                return getYamlChangelogTemplate();
+            case 'json':
+                return getJsonChangelogTemplate();
+            case 'sql':
+                return getSqlChangelogTemplate();
+            default:
+                return '';
         }
+    } else if (fileType === 'changeset') {
+        // For changeset templates, to be implemented
+        return '';
     }
     
-    // YAML templates
-    else if (format === 'yaml' || format === 'yml') {
-        if (fileType === 'changelog') {
-            if (templateType === 'root') {
-                return getYamlRootChangelogTemplate();
-            } else if (templateType === 'object') {
-                return getYamlObjectChangelogTemplate();
-            } else if (templateType === 'release') {
-                return getYamlReleaseChangelogTemplate();
-            } else {
-                return getYamlCustomChangelogTemplate();
-            }
-        } else if (fileType === 'changeset') {
-            // For changeset templates, to be implemented
-            return '';
-        }
-    }
-    
-    // JSON templates
-    else if (format === 'json') {
-        if (fileType === 'changelog') {
-            if (templateType === 'root') {
-                return getJsonRootChangelogTemplate();
-            } else if (templateType === 'object') {
-                return getJsonObjectChangelogTemplate();
-            } else if (templateType === 'release') {
-                return getJsonReleaseChangelogTemplate();
-            } else {
-                return getJsonCustomChangelogTemplate();
-            }
-        } else if (fileType === 'changeset') {
-            // For changeset templates, to be implemented
-            return '';
-        }
-    }
-    
-    // SQL templates
-    else if (format === 'sql') {
-        if (fileType === 'changelog') {
-            if (templateType === 'root') {
-                return getSqlRootChangelogTemplate();
-            } else if (templateType === 'object') {
-                return getSqlObjectChangelogTemplate();
-            } else if (templateType === 'release') {
-                return getSqlReleaseChangelogTemplate();
-            } else {
-                return getSqlCustomChangelogTemplate();
-            }
-        } else if (fileType === 'changeset') {
-            // For changeset templates, to be implemented
-            return '';
-        }
-    }
-    
-    // Default empty template
     return '';
 }
 
@@ -174,8 +119,8 @@ function fillTemplate(template, data) {
     return result;
 }
 
-// XML template functions
-function getXmlRootChangelogTemplate() {
+// XML template function
+function getXmlChangelogTemplate() {
     return `<?xml version="1.0" encoding="UTF-8"?>
 <databaseChangeLog
     xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
@@ -183,259 +128,26 @@ function getXmlRootChangelogTemplate() {
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
     
-    <!-- Root Changelog: {{name}} -->
-    <!-- Description: {{description}} -->
-    <!-- Created: {{date}} -->
-    
-    <!-- Include your changelog files here -->
-    
 </databaseChangeLog>`;
 }
 
-function getXmlObjectChangelogTemplate() {
-    return `<?xml version="1.0" encoding="UTF-8"?>
-<databaseChangeLog
-    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
-        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
-    
-    <!-- Object Changelog: {{name}} -->
-    <!-- Description: {{description}} -->
-    <!-- Object Type: {{objectType}} -->
-    <!-- Created: {{date}} -->
-    
-    <changeSet id="initial-{{name}}" author="{{author}}">
-        <!-- Add your changes here -->
-    </changeSet>
-    
-</databaseChangeLog>`;
-}
-
-function getXmlReleaseChangelogTemplate() {
-    return `<?xml version="1.0" encoding="UTF-8"?>
-<databaseChangeLog
-    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
-        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
-    
-    <!-- Release Changelog: {{name}} -->
-    <!-- Version: {{version}} -->
-    <!-- Description: {{description}} -->
-    <!-- Created: {{date}} -->
-    
-    <changeSet id="{{version}}-initial" author="{{author}}">
-        <!-- Add your changes here -->
-    </changeSet>
-    
-</databaseChangeLog>`;
-}
-
-function getXmlCustomChangelogTemplate() {
-    return `<?xml version="1.0" encoding="UTF-8"?>
-<databaseChangeLog
-    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
-        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
-    
-    <!-- Custom Changelog: {{name}} -->
-    <!-- Type: {{customType}} -->
-    <!-- Description: {{description}} -->
-    <!-- Created: {{date}} -->
-    
-    <changeSet id="initial-{{name}}" author="{{author}}">
-        <!-- Add your changes here -->
-    </changeSet>
-    
-</databaseChangeLog>`;
-}
-
-// YAML template functions
-function getYamlRootChangelogTemplate() {
+// YAML template function
+function getYamlChangelogTemplate() {
     return `databaseChangeLog:
-  # Root Changelog: {{name}}
-  # Description: {{description}}
-  # Created: {{date}}
-  
-  # Include your changelog files here
 `;
 }
 
-function getYamlObjectChangelogTemplate() {
-    return `databaseChangeLog:
-  # Object Changelog: {{name}}
-  # Description: {{description}}
-  # Object Type: {{objectType}}
-  # Created: {{date}}
-  
-  - changeSet:
-      id: initial-{{name}}
-      author: {{author}}
-      changes:
-        # Add your changes here
-`;
-}
-
-function getYamlReleaseChangelogTemplate() {
-    return `databaseChangeLog:
-  # Release Changelog: {{name}}
-  # Version: {{version}}
-  # Description: {{description}}
-  # Created: {{date}}
-  
-  - changeSet:
-      id: {{version}}-initial
-      author: {{author}}
-      changes:
-        # Add your changes here
-`;
-}
-
-function getYamlCustomChangelogTemplate() {
-    return `databaseChangeLog:
-  # Custom Changelog: {{name}}
-  # Type: {{customType}}
-  # Description: {{description}}
-  # Created: {{date}}
-  
-  - changeSet:
-      id: initial-{{name}}
-      author: {{author}}
-      changes:
-        # Add your changes here
-`;
-}
-
-// JSON template functions
-function getJsonRootChangelogTemplate() {
+// JSON template function
+function getJsonChangelogTemplate() {
     return `{
   "databaseChangeLog": [
-    {
-      "_comment": "Root Changelog: {{name}}",
-      "_description": "{{description}}",
-      "_created": "{{date}}"
-    }
-    /* Include your changelog files here */
   ]
 }`;
 }
 
-function getJsonObjectChangelogTemplate() {
-    return `{
-  "databaseChangeLog": [
-    {
-      "_comment": "Object Changelog: {{name}}",
-      "_description": "{{description}}",
-      "_objectType": "{{objectType}}",
-      "_created": "{{date}}"
-    },
-    {
-      "changeSet": {
-        "id": "initial-{{name}}",
-        "author": "{{author}}",
-        "changes": [
-          /* Add your changes here */
-        ]
-      }
-    }
-  ]
-}`;
-}
-
-function getJsonReleaseChangelogTemplate() {
-    return `{
-  "databaseChangeLog": [
-    {
-      "_comment": "Release Changelog: {{name}}",
-      "_version": "{{version}}",
-      "_description": "{{description}}",
-      "_created": "{{date}}"
-    },
-    {
-      "changeSet": {
-        "id": "{{version}}-initial",
-        "author": "{{author}}",
-        "changes": [
-          /* Add your changes here */
-        ]
-      }
-    }
-  ]
-}`;
-}
-
-function getJsonCustomChangelogTemplate() {
-    return `{
-  "databaseChangeLog": [
-    {
-      "_comment": "Custom Changelog: {{name}}",
-      "_type": "{{customType}}",
-      "_description": "{{description}}",
-      "_created": "{{date}}"
-    },
-    {
-      "changeSet": {
-        "id": "initial-{{name}}",
-        "author": "{{author}}",
-        "changes": [
-          /* Add your changes here */
-        ]
-      }
-    }
-  ]
-}`;
-}
-
-// SQL template functions
-function getSqlRootChangelogTemplate() {
+// SQL template function
+function getSqlChangelogTemplate() {
     return `--liquibase formatted sql
-
--- Root Changelog: {{name}}
--- Description: {{description}}
--- Created: {{date}}
-
--- Include your changelog files here
-`;
-}
-
-function getSqlObjectChangelogTemplate() {
-    return `--liquibase formatted sql
-
--- Object Changelog: {{name}}
--- Description: {{description}}
--- Object Type: {{objectType}}
--- Created: {{date}}
-
---changeset {{author}}:initial-{{name}}
--- Add your changes here
-`;
-}
-
-function getSqlReleaseChangelogTemplate() {
-    return `--liquibase formatted sql
-
--- Release Changelog: {{name}}
--- Version: {{version}}
--- Description: {{description}}
--- Created: {{date}}
-
---changeset {{author}}:{{version}}-initial
--- Add your changes here
-`;
-}
-
-function getSqlCustomChangelogTemplate() {
-    return `--liquibase formatted sql
-
--- Custom Changelog: {{name}}
--- Type: {{customType}}
--- Description: {{description}}
--- Created: {{date}}
-
---changeset {{author}}:initial-{{name}}
--- Add your changes here
 `;
 }
 
