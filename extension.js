@@ -9,7 +9,8 @@ const {
     configureDefaultFormats,
     configureNamingPatterns,
     configureProjectStructure,
-    configureAuthor
+    configureAuthor,
+    configureMainParentChangelog
 } = require('./src/config/setupWizard');
 const { generateChangelog } = require('./src/generators/changelogGenerator');
 
@@ -41,7 +42,10 @@ function activate(context) {
         vscode.commands.registerCommand('liquibaseGenerator.setPropertiesPath', async () => {
             const propertiesPath = await configurePropertiesPath();
             if (propertiesPath) {
-                vscode.window.showInformationMessage(`Liquibase properties path set to: ${propertiesPath}`);
+                vscode.window.showInformationMessage(
+                    `Liquibase properties path set to: ${propertiesPath}`,
+                    { modal: false, detail: '' }
+                );
             }
         })
     );
@@ -58,7 +62,10 @@ function activate(context) {
         vscode.commands.registerCommand('liquibaseGenerator.configureFormats', async () => {
             const result = await configureDefaultFormats();
             if (result) {
-                vscode.window.showInformationMessage('File formats configuration updated successfully');
+                vscode.window.showInformationMessage(
+                    'File formats configuration updated successfully',
+                    { modal: false, detail: '' }
+                );
             }
         })
     );
@@ -67,7 +74,10 @@ function activate(context) {
         vscode.commands.registerCommand('liquibaseGenerator.configureNaming', async () => {
             const result = await configureNamingPatterns();
             if (result) {
-                vscode.window.showInformationMessage('Naming patterns configuration updated successfully');
+                vscode.window.showInformationMessage(
+                    'Naming patterns configuration updated successfully',
+                    { modal: false, detail: '' }
+                );
             }
         })
     );
@@ -76,7 +86,10 @@ function activate(context) {
         vscode.commands.registerCommand('liquibaseGenerator.configureStructure', async () => {
             const result = await configureProjectStructure();
             if (result) {
-                vscode.window.showInformationMessage('Project structure configuration updated successfully');
+                vscode.window.showInformationMessage(
+                    'Project structure configuration updated successfully',
+                    { modal: false, detail: '' }
+                );
             }
         })
     );
@@ -85,7 +98,25 @@ function activate(context) {
         vscode.commands.registerCommand('liquibaseGenerator.configureAuthor', async () => {
             const result = await configureAuthor();
             if (result) {
-                vscode.window.showInformationMessage('Author configuration updated successfully');
+                vscode.window.showInformationMessage(
+                    'Author configuration updated successfully',
+                    { modal: false, detail: '' }
+                );
+            }
+        })
+    );
+    
+    // Register command for main parent changelog configuration
+    context.subscriptions.push(
+        vscode.commands.registerCommand('liquibaseGenerator.configureMainParentChangelog', async () => {
+            const result = await configureMainParentChangelog();
+            if (result !== null) {
+                if (result) {
+                    vscode.window.showInformationMessage(
+                        `Root changelog path set to: ${result}`,
+                        { modal: false, detail: '' }
+                    );
+                }
             }
         })
     );
@@ -95,9 +126,14 @@ function activate(context) {
         vscode.commands.registerCommand('liquibaseGenerator.showSettings', async () => {
             const selected = await vscode.window.showQuickPick([
                 { 
-                    label: '$(file) Liquibase Properties Path',
+                    label: '$(symbol-property) Liquibase Properties Path',
                     detail: 'Set the path to liquibase.properties file',
                     command: 'liquibaseGenerator.setPropertiesPath' 
+                },
+                {
+                    label: '$(file) Main Changelog',
+                    detail: 'Set the root changelog that new changelogs will connect to',
+                    command: 'liquibaseGenerator.configureMainParentChangelog'
                 },
                 { 
                     label: '$(regex) Default Formats',
@@ -115,7 +151,7 @@ function activate(context) {
                     command: 'liquibaseGenerator.configureAuthor'
                 },
                 { 
-                    label: '$(settings-gear) Run Full Setup Wizard',
+                    label: '$(settings-gear) Setup Wizard',
                     detail: 'Configure all settings in sequence',
                     command: 'liquibaseGenerator.setupExtension'
                 }
@@ -151,6 +187,8 @@ function activate(context) {
                 }
                 
                 // Create the changelog
+                // If root changelog is configured in settings,
+                // the new changelog will be automatically connected to it
                 await generateChangelog({ targetDirectory });
             } catch (error) {
                 console.error('Error creating changelog:', error);
@@ -177,6 +215,7 @@ async function checkFirstRun(context) {
         // Show welcome message with two options
         const result = await vscode.window.showInformationMessage(
             'Welcome to Liquibase Plugin! The extension needs some initial configuration to work properly.',
+            { modal: true },  // Keep this one modal since it's important
             'Configure Now', 'Later'
         );
         
@@ -187,13 +226,13 @@ async function checkFirstRun(context) {
             // Remind about configuration option for later
             const settingsInfo = await vscode.window.showInformationMessage(
                 'You can configure the plugin anytime using the "Liquibase: Plugin Settings" command in the Command Palette (Ctrl+Shift+P).',
-                'Got it'
+                { modal: false, detail: '' }
             );
             
             // Show information about creating changelogs
             vscode.window.showInformationMessage(
-                'To create a changelog file, right-click on a folder in the Explorer and select "Liquibase: Create Changelog".',
-                'Got it'
+                'To create a changelog file, right-click on a folder in the Explorer and select "Liquibase: Create Changelog". If you configure a root changelog, new changelogs will be connected to it automatically.',
+                { modal: false, detail: '' }
             );
         }
     }

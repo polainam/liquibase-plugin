@@ -27,21 +27,28 @@ async function startSetupWizard() {
             return false;
         }
         
-        // Step 2 & 3: Configure default formats (for changelog and changeset)
+        // Step 2: Configure main parent changelog
+        const parentChangelog = await configureMainParentChangelog();
+        if (parentChangelog === null) {
+            vscode.window.showWarningMessage('Setup wizard was canceled. You can run it again later with "Liquibase: Plugin Settings".');
+            return false;
+        }
+        
+        // Step 3 & 4: Configure default formats (for changelog and changeset)
         const formatSettings = await configureDefaultFormats();
         if (!formatSettings) {
             vscode.window.showWarningMessage('Setup wizard was canceled. You can run it again later with "Liquibase: Plugin Settings".');
             return false;
         }
         
-        // Step 4-7: Configure naming patterns (date format + patterns for changelog and changeset)
+        // Step 5-8: Configure naming patterns (date format + patterns for changelog and changeset)
         const namingSettings = await configureNamingPatterns();
         if (!namingSettings) {
             vscode.window.showWarningMessage('Setup wizard was canceled. You can run it again later with "Liquibase: Plugin Settings".');
             return false;
         }
         
-        // Step 5: Configure author
+        // Step 9: Configure author
         const author = await configureAuthor();
         if (!author) {
             vscode.window.showWarningMessage('Setup wizard was canceled. You can run it again later with "Liquibase: Plugin Settings".');
@@ -51,7 +58,7 @@ async function startSetupWizard() {
         // Setup completed
         vscode.window.showInformationMessage(
             'Liquibase Plugin setup completed successfully! You can modify any settings later through the "Liquibase: Plugin Settings".',
-            'OK'
+            { modal: false, detail: '' }
         );
         
         return true;
@@ -298,9 +305,10 @@ async function configureProjectStructure() {
         // Get current object directories if they exist
         const currentObjectDirs = config.get('objectDirectories') || {};
         
-        await vscode.window.showInformationMessage(
+        // Show information message without awaiting it
+        vscode.window.showInformationMessage(
             'Please configure directories for different object types',
-            'OK'
+            { modal: false, detail: '' }
         );
         
         for (const type of defaultTypes) {
@@ -355,11 +363,90 @@ async function configureAuthor() {
     return author;
 }
 
+/**
+ * Configure the main parent changelog
+ * @returns {Promise<string|null>} Path to the main parent changelog or null if skipped
+ */
+async function configureMainParentChangelog() {
+    const config = vscode.workspace.getConfiguration('liquibaseGenerator');
+    
+    // Get current main parent changelog if exists
+    const currentParentChangelog = config.get('mainParentChangelog') || '';
+    
+    // Ask if user wants to configure a main parent changelog
+    const setupParent = await vscode.window.showQuickPick([
+        { 
+            label: 'Yes',
+            description: 'Select a main parent changelog file',
+            picked: currentParentChangelog !== ''
+        },
+        { 
+            label: 'No',
+            description: 'Skip this step',
+            picked: currentParentChangelog === ''
+        }
+    ], {
+        placeHolder: 'Do you want to set up a main parent changelog?',
+        title: 'Main Parent Changelog Configuration'
+    });
+    
+    if (!setupParent) {
+        return null;
+    }
+    
+    if (setupParent.label === 'No') {
+        // User decided to skip - show information message without awaiting it
+        vscode.window.showInformationMessage(
+            'No main parent changelog configured. You can create one later, but new changelogs will not be automatically connected.',
+            { modal: false, detail: '' }
+        );
+        
+        // Clear existing value if any
+        if (currentParentChangelog) {
+            await config.update('mainParentChangelog', '', true);
+        }
+        
+        // Enable warnings about missing root changelog by default
+        await config.update('showRootChangelogWarning', true, true);
+        
+        return '';
+    }
+    
+    // Open file dialog to select the main parent changelog
+    const fileUris = await vscode.window.showOpenDialog({
+        canSelectMany: false,
+        filters: {
+            'Changelog Files': ['xml', 'yaml', 'yml', 'json', 'sql']
+        },
+        title: 'Select Main Parent Changelog File'
+    });
+    
+    if (!fileUris || fileUris.length === 0) {
+        // User canceled selection - show information message without awaiting it
+        vscode.window.showInformationMessage(
+            'No main parent changelog selected. New changelogs will not be automatically connected.',
+            { modal: false, detail: '' }
+        );
+        return '';
+    }
+    
+    const parentChangelog = fileUris[0].fsPath;
+    
+    // Save to settings
+    await config.update('mainParentChangelog', parentChangelog, true);
+    
+    // Disable warnings about missing root changelog since it's now configured
+    await config.update('showRootChangelogWarning', false, true);
+    
+    return parentChangelog;
+}
+
 module.exports = {
     startSetupWizard,
     configurePropertiesPath,
     configureDefaultFormats,
     configureNamingPatterns,
     configureProjectStructure,
-    configureAuthor
+    configureAuthor,
+    configureMainParentChangelog
 }; 

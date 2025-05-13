@@ -13,7 +13,6 @@ const { getTemplateContent } = require('./templateManager');
  * @param {string} [options.targetDirectory] Target directory for the changelog
  * @param {string} [options.name] Name for the changelog
  * @param {string} [options.format] Format of the changelog (xml, yaml, json, sql)
- * @param {boolean} [options.isRoot] Whether this is a root changelog
  * @returns {Promise<string|null>} Path to the generated changelog or null if failed
  */
 async function generateChangelog(options) {
@@ -43,20 +42,8 @@ async function generateChangelog(options) {
         const dateFormat = config.get('dateFormatInFilenames') || 'YYYYMMDD';
         const dateValue = moment().format(dateFormat);
         
-        // Ask if user wants to create a root changelog or a regular one
-        const isRoot = await vscode.window.showQuickPick([
-            { label: 'Root Changelog', detail: 'Main changelog that includes other changelogs', value: true },
-            { label: 'Regular Changelog', detail: 'Changelog that can be included in a root changelog', value: false }
-        ], {
-                title: 'Changelog Type'
-            });
-            
-        if (!isRoot) {
-                return null; // User canceled
-            }
-            
-        // Define the type based on user choice
-        const type = isRoot.value ? 'root' : 'custom';
+        // All changelogs are considered regular (not root)
+        const type = 'custom';
         
         // Prompt for name with live preview if not provided
         let name = options.name;
@@ -142,26 +129,43 @@ async function generateChangelog(options) {
         // Write content to file
         fs.writeFileSync(changelogPath, content);
         
-        // If this is not a root changelog, try to find parent changelogs and let user choose
-        if (!isRoot.value) {
-            const { connected, parentPath } = await connectToParentChangelog(changelogPath, format, targetDirectory);
+        // Check if there's a configured main parent changelog
+        const mainParentChangelog = config.get('mainParentChangelog');
+        
+        if (mainParentChangelog && fs.existsSync(mainParentChangelog)) {
+            // Connect to the main parent changelog automatically
+            const connected = await addToParentChangelog(mainParentChangelog, changelogPath);
             
-            // If connected to a parent, show parent changelog first, then the new one
-            if (connected && parentPath) {
-                // Open both files side by side
-                await openFilesInSplitView(parentPath, changelogPath);
+            if (connected) {
+                // Open both files as tabs
+                await openFilesInSplitView(mainParentChangelog, changelogPath);
             } else {
-                // If not connected, just open the new changelog
+                // If connection failed, just open the new changelog
                 const doc = await vscode.workspace.openTextDocument(changelogPath);
                 await vscode.window.showTextDocument(doc);
             }
         } else {
-            // For root changelogs, just open the new file
-            const doc = await vscode.workspace.openTextDocument(changelogPath);
-            await vscode.window.showTextDocument(doc);
-        }
+            // No main parent changelog configured, just open the new file
+        const doc = await vscode.workspace.openTextDocument(changelogPath);
+        await vscode.window.showTextDocument(doc);
         
-        // No success message
+            // Check if we should show a warning message
+            const showWarning = config.get('showRootChangelogWarning');
+            if (showWarning) {
+                // Show warning that no parent changelog is configured
+                vscode.window.showInformationMessage(
+                    'No root changelog is configured. This changelog will not be automatically connected. You can configure a root changelog in the Liquibase Plugin Settings.',
+                    { modal: false, detail: '' },
+                    'OK',
+                    'Don\'t show again'
+                ).then(selection => {
+                    if (selection === 'Don\'t show again') {
+                        // User doesn't want to see this message again, update the setting
+                        config.update('showRootChangelogWarning', false, true);
+                    }
+                });
+            }
+        }
         
         return changelogPath;
     } catch (error) {
@@ -180,6 +184,39 @@ async function generateChangelog(options) {
  */
 async function connectToParentChangelog(changelogPath, format, targetDirectory) {
     try {
+        // Check if there's a configured main parent changelog
+        const config = vscode.workspace.getConfiguration('liquibaseGenerator');
+        const mainParentChangelog = config.get('mainParentChangelog');
+        
+        if (mainParentChangelog && fs.existsSync(mainParentChangelog)) {
+            // Use the main parent changelog if it exists
+            const mainParentName = path.basename(mainParentChangelog);
+            
+            const connectChoice = await vscode.window.showQuickPick([
+                { label: 'Yes', description: `Connect to root changelog: ${mainParentName}` },
+                { label: 'No', description: 'Do not connect' },
+                { label: 'Find other parent changelogs', description: 'Find and connect to a different parent changelog' }
+            ], {
+                placeHolder: `Root changelog is configured (${mainParentName}). Connect to it?`,
+                title: 'Connect to Root Changelog'
+            });
+            
+            if (!connectChoice) {
+                return { connected: false, parentPath: null };
+            }
+            
+            if (connectChoice.label === 'Yes') {
+                const connected = await addToParentChangelog(mainParentChangelog, changelogPath);
+                return { connected, parentPath: connected ? mainParentChangelog : null };
+            }
+            
+            if (connectChoice.label === 'No') {
+                return { connected: false, parentPath: null };
+            }
+            
+            // If user chooses "Find other parent changelogs", continue with the original flow
+        }
+        
         // Find all potential parent changelogs
         const parentChangelogs = await findParentChangelogs(targetDirectory, changelogPath);
         
@@ -251,7 +288,7 @@ async function connectToParentChangelog(changelogPath, format, targetDirectory) 
 async function findParentChangelogs(targetDirectory, newChangelogPath) {
     try {
         // Get configuration
-        const config = vscode.workspace.getConfiguration('liquibaseGenerator');
+                const config = vscode.workspace.getConfiguration('liquibaseGenerator');
         
         // Get all formats
         const formats = ['xml', 'yaml', 'yml', 'json'];

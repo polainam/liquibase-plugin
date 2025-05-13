@@ -1,4 +1,3 @@
 databaseChangeLog:
   - include:
       file: ../changesets/yaml/create-table-person.yaml
-

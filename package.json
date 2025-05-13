@@ -95,6 +95,16 @@
           "type": "string",
           "default": "",
           "description": "Default author for changelogs and changesets"
+        },
+        "liquibaseGenerator.mainParentChangelog": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the main parent changelog file that all new changelogs will be connected to by default"
+        },
+        "liquibaseGenerator.showRootChangelogWarning": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show warning when no root changelog is configured"
         }
       }
     },
@@ -136,6 +146,10 @@
         "title": "Liquibase: Configure Default Author"
       },
       {
+        "command": "liquibaseGenerator.configureMainParentChangelog",
+        "title": "Liquibase: Configure Main Parent Changelog"
+      },
+      {
         "command": "liquibaseGenerator.configureStructure",
         "title": "Liquibase: Configure Project Structure"
       },
@@ -164,6 +178,10 @@
         },
         {
           "command": "liquibaseGenerator.configureAuthor",
+          "when": "false"
+        },
+        {
+          "command": "liquibaseGenerator.configureMainParentChangelog",
           "when": "false"
         },
         {
