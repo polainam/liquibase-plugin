@@ -8,6 +8,16 @@ const { formatFilename, ensureDirectoryExists, getExtensionForFormat, findRootCh
 const { getTemplateContent } = require('./templateManager');
 
 /**
+ * Extract variables from naming pattern
+ * @param {string} pattern Naming pattern
+ * @returns {string[]} Array of variable names
+ */
+function extractVariablesFromPattern(pattern) {
+    const matches = pattern.match(/\{([^}]+)\}/g) || [];
+    return matches.map(match => match.slice(1, -1));
+}
+
+/**
  * Generate a changelog file
  * @param {Object} options Generation options
  * @param {string} [options.targetDirectory] Target directory for the changelog
@@ -37,81 +47,93 @@ async function generateChangelog(options) {
         // Get author from settings
         const author = config.get('defaultAuthor') || process.env.USER || process.env.USERNAME || 'unknown';
         
-        // Generate preview filename pattern for InputBox
+        // Get naming pattern and date format
         const namingPattern = config.get('changelogNamingPattern') || 'changelog-{date}-{name}.{ext}';
         const dateFormat = config.get('dateFormatInFilenames') || 'YYYYMMDD';
         const dateValue = moment().format(dateFormat);
         
+        // Extract variables from pattern
+        const variables = extractVariablesFromPattern(namingPattern);
+        
         // All changelogs are considered regular (not root)
         const type = 'custom';
         
-        // Prompt for name with live preview if not provided
-        let name = options.name;
-        let filename = '';
-        
-        if (!name) {
-            // We'll use an input box with value changed handler to show preview
-            const inputBox = vscode.window.createInputBox();
-            inputBox.title = 'Changelog Name';
-            inputBox.prompt = 'Enter a name for the changelog';
-            
-            // Use a promise to handle the async inputBox
-            name = await new Promise(resolve => {
-                inputBox.onDidChangeValue(value => {
-                    if (value) {
-                        // Generate preview with current value
-                        const previewVars = {
-                            name: value,
-                            ext: extension,
-                            author: author,
-                            date: dateValue,
-                            object: value,
-                            release: value
-                        };
-                        
-                        filename = formatFilename(namingPattern, previewVars);
-                        // Use title to show preview without error styling
-                        inputBox.title = `Changelog Name - Preview: ${filename}`;
-                    } else {
-                        inputBox.title = 'Changelog Name';
-                    }
-                });
-                
-                inputBox.onDidAccept(() => {
-                    const value = inputBox.value;
-                    inputBox.hide();
-                    resolve(value);
-                });
-                
-                inputBox.onDidHide(() => {
-                    resolve(inputBox.value);
-                });
-                
-                inputBox.show();
-            });
-            
-            if (!name) {
-                return null; // User canceled
-            }
-        } else {
-            // If name was provided as an option, just generate the filename
-        const filenameVariables = {
-            name: name,
+        // Collect values for all variables
+        const variableValues = {
             ext: extension,
-                author: author,
-                date: dateValue,
-                object: name,
-                release: name
-            };
-            
-            filename = formatFilename(namingPattern, filenameVariables);
+            author: author,
+            date: dateValue
+        };
+        
+        // If name was provided as an option, use it for all name-related variables
+        if (options.name) {
+            variableValues.name = options.name;
+            variableValues.object = options.name;
+            variableValues.release = options.name;
+        } else {
+            // Prompt for each variable that needs user input
+            for (const variable of variables) {
+                // Skip variables that are already set
+                if (variableValues[variable] !== undefined) {
+                    continue;
+                }
+                
+                // Skip {ext} as it's handled automatically
+                if (variable === 'ext') {
+                    continue;
+                }
+                
+                // Create input box for the variable
+                const inputBox = vscode.window.createInputBox();
+                inputBox.title = `Changelog ${variable.charAt(0).toUpperCase() + variable.slice(1)}`;
+                inputBox.prompt = `Enter ${variable} for the changelog`;
+                
+                // Use a promise to handle the async inputBox
+                const value = await new Promise(resolve => {
+                    inputBox.onDidChangeValue(value => {
+                        if (value) {
+                            // Generate preview with current values
+                            const previewVars = {
+                                ...variableValues,
+                                [variable]: value
+                            };
+                            
+                            const filename = formatFilename(namingPattern, previewVars);
+                            inputBox.title = `Changelog ${variable.charAt(0).toUpperCase() + variable.slice(1)} - Preview: ${filename}`;
+                        } else {
+                            inputBox.title = `Changelog ${variable.charAt(0).toUpperCase() + variable.slice(1)}`;
+                        }
+                    });
+                    
+                    inputBox.onDidAccept(() => {
+                        const value = inputBox.value;
+                        inputBox.hide();
+                        resolve(value);
+                    });
+                    
+                    inputBox.onDidHide(() => {
+                        resolve(inputBox.value);
+                    });
+                    
+                    inputBox.show();
+                });
+                
+                if (!value) {
+                    return null; // User canceled
+                }
+                
+                // Store the value
+                variableValues[variable] = value;
+            }
         }
         
+        // Generate filename
+        const filename = formatFilename(namingPattern, variableValues);
         const changelogPath = path.join(targetDirectory, filename);
         
         // Generate content
         const templateData = {
-            name: name,
+            name: variableValues.name || '',
             description: '', // Description is not required
             date: moment().format('YYYY-MM-DD HH:mm:ss'),
             author: author,
@@ -146,9 +168,9 @@ async function generateChangelog(options) {
             }
         } else {
             // No main parent changelog configured, just open the new file
-        const doc = await vscode.workspace.openTextDocument(changelogPath);
-        await vscode.window.showTextDocument(doc);
-        
+            const doc = await vscode.workspace.openTextDocument(changelogPath);
+            await vscode.window.showTextDocument(doc);
+            
             // Check if we should show a warning message
             const showWarning = config.get('showRootChangelogWarning');
             if (showWarning) {
