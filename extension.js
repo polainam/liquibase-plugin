@@ -10,9 +10,11 @@ const {
     configureNamingPatterns,
     configureProjectStructure,
     configureAuthor,
-    configureMainParentChangelog
+    configureMainParentChangelog,
+    configureChangelog
 } = require('./src/config/setupWizard');
 const { generateChangelog } = require('./src/generators/changelogGenerator');
+const { generateChangeset } = require('./src/generators/changesetGenerator');
 
 function activate(context) {
     console.log('Liquibase plugin activated.');
@@ -106,17 +108,15 @@ function activate(context) {
         })
     );
     
-    // Register command for main parent changelog configuration
+    // Register command for changelog configuration
     context.subscriptions.push(
-        vscode.commands.registerCommand('liquibaseGenerator.configureMainParentChangelog', async () => {
-            const result = await configureMainParentChangelog();
-            if (result !== null) {
-                if (result) {
-                    vscode.window.showInformationMessage(
-                        `Root changelog path set to: ${result}`,
-                        { modal: false, detail: '' }
-                    );
-                }
+        vscode.commands.registerCommand('liquibaseGenerator.configureChangelog', async () => {
+            const result = await configureChangelog();
+            if (result && result.message) {
+                vscode.window.showInformationMessage(
+                    result.message,
+                    { modal: false, detail: '' }
+                );
             }
         })
     );
@@ -131,9 +131,9 @@ function activate(context) {
                     command: 'liquibaseGenerator.setPropertiesPath' 
                 },
                 {
-                    label: '$(file) Main Changelog',
-                    detail: 'Set the root changelog that new changelogs will connect to',
-                    command: 'liquibaseGenerator.configureMainParentChangelog'
+                    label: '$(file) Configure Changelog',
+                    detail: 'Configure root changelog or folder-specific changelogs',
+                    command: 'liquibaseGenerator.configureChangelog'
                 },
                 { 
                     label: '$(regex) Default Formats',
@@ -197,6 +197,35 @@ function activate(context) {
         })
     );
     
+    // Register command for creating changeset
+    context.subscriptions.push(
+        vscode.commands.registerCommand('liquibaseGenerator.createChangeset', async (uri) => {
+            try {
+                // If uri is provided, use it as the target directory
+                let targetDirectory = null;
+                
+                if (uri && uri.fsPath) {
+                    const fs = require('fs');
+                    const path = require('path');
+                    const stats = fs.statSync(uri.fsPath);
+                    
+                    if (stats.isDirectory()) {
+                        targetDirectory = uri.fsPath;
+                    } else {
+                        // If a file is selected, use its parent directory
+                        targetDirectory = path.dirname(uri.fsPath);
+                    }
+                }
+                
+                // Create the changeset
+                await generateChangeset({ targetDirectory });
+            } catch (error) {
+                console.error('Error creating changeset:', error);
+                vscode.window.showErrorMessage(`Failed to create changeset: ${error.message}`);
+            }
+        })
+    );
+    
     // Check if this is the first run and prompt setup wizard
     checkFirstRun(context);
 }
@@ -226,12 +255,6 @@ async function checkFirstRun(context) {
             // Remind about configuration option for later
             const settingsInfo = await vscode.window.showInformationMessage(
                 'You can configure the plugin anytime using the "Liquibase: Plugin Settings" command in the Command Palette (Ctrl+Shift+P).',
-                { modal: false, detail: '' }
-            );
-            
-            // Show information about creating changelogs
-            vscode.window.showInformationMessage(
-                'To create a changelog file, right-click on a folder in the Explorer and select "Liquibase: Create Changelog". If you configure a root changelog, new changelogs will be connected to it automatically.',
                 { modal: false, detail: '' }
             );
         }

@@ -82,8 +82,19 @@ function getBuiltInTemplate(format, fileType, templateType) {
                 return '';
         }
     } else if (fileType === 'changeset') {
-        // For changeset templates, to be implemented
-        return '';
+        switch (format.toLowerCase()) {
+            case 'xml':
+                return getXmlChangesetTemplate(templateType);
+            case 'yaml':
+            case 'yml':
+                return getYamlChangesetTemplate(templateType);
+            case 'json':
+                return getJsonChangesetTemplate(templateType);
+            case 'sql':
+                return getSqlChangesetTemplate(templateType);
+            default:
+                return '';
+        }
     }
     
     return '';
@@ -148,6 +159,60 @@ function getJsonChangelogTemplate() {
 // SQL template function
 function getSqlChangelogTemplate() {
     return `--liquibase formatted sql
+`;
+}
+
+// XML changeset template function
+function getXmlChangesetTemplate(templateType) {
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="{{id}}" author="{{author}}">
+        CURSOR_POSITION
+    </changeSet>
+    
+</databaseChangeLog>`;
+}
+
+// YAML changeset template function
+function getYamlChangesetTemplate(templateType) {
+    return `databaseChangeLog:
+  - changeSet:
+      id: {{id}}
+      author: {{author}}
+      changes:
+        CURSOR_POSITION
+
+`;
+}
+
+// JSON changeset template function
+function getJsonChangesetTemplate(templateType) {
+    return `{
+  "databaseChangeLog": [
+    {
+      "changeSet": {
+        "id": "{{id}}",
+        "author": "{{author}}",
+        "changes": [
+          CURSOR_POSITION
+        ]
+      }
+    }
+  ]
+}`;
+}
+
+// SQL changeset template function
+function getSqlChangesetTemplate(templateType) {
+    return `--liquibase formatted sql
+--changeset {{author}}:{{id}}
+
+CURSOR_POSITION
 `;
 }
 

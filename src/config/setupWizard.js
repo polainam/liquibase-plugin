@@ -441,6 +441,105 @@ async function configureMainParentChangelog() {
     return parentChangelog;
 }
 
+/**
+ * Configure root or folder-specific changelog
+ * @returns {Promise<Object|null>} Result of the configuration or null if canceled
+ */
+async function configureChangelog() {
+    const config = vscode.workspace.getConfiguration('liquibaseGenerator');
+    
+    // Ask user to select the type of changelog configuration
+    const changelogType = await vscode.window.showQuickPick([
+        { 
+            label: 'Root Changelog',
+            detail: 'Configure main changelog for the entire project'
+        },
+        { 
+            label: 'Folder Changelog',
+            detail: 'Configure changelog for a specific folder'
+        }
+    ], {
+        placeHolder: 'Select type of changelog to configure',
+        title: 'Changelog Configuration'
+    });
+    
+    if (!changelogType) {
+        return null; // User canceled
+    }
+    
+    // If root changelog selected, use existing function
+    if (changelogType.label === 'Root Changelog') {
+        const rootChangelog = await configureMainParentChangelog();
+        
+        if (rootChangelog === null) {
+            return null; // User canceled
+        }
+        
+        if (rootChangelog) {
+            return {
+                type: 'root',
+                path: rootChangelog,
+                message: `Root changelog path set to: ${rootChangelog}`
+            };
+        } else {
+            return {
+                type: 'root',
+                path: '',
+                message: 'Root changelog configuration cleared'
+            };
+        }
+    }
+    
+    // For folder changelog
+    if (changelogType.label === 'Folder Changelog') {
+        // First, select a folder
+        const folderUris = await vscode.window.showOpenDialog({
+            canSelectFiles: false,
+            canSelectFolders: true,
+            canSelectMany: false,
+            title: 'Select Folder for Changelog Configuration'
+        });
+        
+        if (!folderUris || folderUris.length === 0) {
+            return null; // User canceled
+        }
+        
+        const folderPath = folderUris[0].fsPath;
+        
+        // Now, select a changelog file
+        const changelogUris = await vscode.window.showOpenDialog({
+            canSelectFiles: true,
+            canSelectFolders: false,
+            canSelectMany: false,
+            filters: {
+                'Changelog Files': ['xml', 'yaml', 'yml', 'json', 'sql']
+            },
+            title: 'Select Changelog File for This Folder'
+        });
+        
+        if (!changelogUris || changelogUris.length === 0) {
+            return null; // User canceled
+        }
+        
+        const changelogPath = changelogUris[0].fsPath;
+        
+        // Update folder mapping configuration
+        const folderMappings = config.get('folderChangelogMappings') || {};
+        folderMappings[folderPath] = changelogPath;
+        
+        await config.update('folderChangelogMappings', folderMappings, true);
+        
+        return {
+            type: 'folder',
+            folderPath: folderPath,
+            changelogPath: changelogPath,
+            message: `Folder changelog configured: All changesets in "${path.basename(folderPath)}" will be connected to ${path.basename(changelogPath)}`
+        };
+    }
+    
+    return null;
+}
+
 module.exports = {
     startSetupWizard,
     configurePropertiesPath,
@@ -448,5 +547,6 @@ module.exports = {
     configureNamingPatterns,
     configureProjectStructure,
     configureAuthor,
-    configureMainParentChangelog
+    configureMainParentChangelog,
+    configureChangelog
 }; 

@@ -1,3 +1,4 @@
 databaseChangeLog:
+
   - include:
-      file: ../changesets/yaml/create-table-person.yaml
+      file: ../changesets/changeset-20250521-врпап.sql

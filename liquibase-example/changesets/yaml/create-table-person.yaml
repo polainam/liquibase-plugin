@@ -3,6 +3,7 @@ databaseChangeLog:
       id: create-person-table-yaml
       author: mezentseva.pa@edu.spbstu.ru
       changes:
+        
         - createTable:
             tableName: person_yaml
             columns:

@@ -105,6 +105,11 @@
           "type": "boolean",
           "default": true,
           "description": "Show warning when no root changelog is configured"
+        },
+        "liquibaseGenerator.folderChangelogMappings": {
+          "type": "object",
+          "default": {},
+          "description": "Mappings between folder paths and changelogs for automatic changeset connection"
         }
       }
     },
@@ -134,6 +139,10 @@
         "title": "Liquibase: Create Changelog"
       },
       {
+        "command": "liquibaseGenerator.createChangeset",
+        "title": "Liquibase: Create Changeset"
+      },
+      {
         "command": "liquibaseGenerator.configureFormats",
         "title": "Liquibase: Configure Default Formats"
       },
@@ -146,8 +155,8 @@
         "title": "Liquibase: Configure Default Author"
       },
       {
-        "command": "liquibaseGenerator.configureMainParentChangelog",
-        "title": "Liquibase: Configure Main Parent Changelog"
+        "command": "liquibaseGenerator.configureChangelog",
+        "title": "Liquibase: Configure Changelog"
       },
       {
         "command": "liquibaseGenerator.configureStructure",
@@ -181,7 +190,7 @@
           "when": "false"
         },
         {
-          "command": "liquibaseGenerator.configureMainParentChangelog",
+          "command": "liquibaseGenerator.configureChangelog",
           "when": "false"
         },
         {
@@ -194,6 +203,10 @@
         },
         {
           "command": "liquibaseGenerator.createChangelog",
+          "when": "false"
+        },
+        {
+          "command": "liquibaseGenerator.createChangeset",
           "when": "false"
         }
       ],
@@ -217,6 +230,11 @@
       "explorer/context": [
         {
           "command": "liquibaseGenerator.createChangelog",
+          "group": "liquibase",
+          "when": "explorerResourceIsFolder || resourceLangId"
+        },
+        {
+          "command": "liquibaseGenerator.createChangeset",
           "group": "liquibase",
           "when": "explorerResourceIsFolder || resourceLangId"
         }
