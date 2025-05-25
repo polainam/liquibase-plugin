@@ -2,7 +2,6 @@ const vscode = require('vscode');
 const { createGeneralStatusBarItem } = require('./src/ui/statusBar/statusBarItem');
 const { registerAllCompletionProviders } = require('./src/intellisense');
 const { generateSqlForChangeset } = require('./src/sql/liquibaseRunner');
-const { getLiquibasePropertiesPath } = require('./src/config/configManager');
 const { 
     startSetupWizard, 
     configurePropertiesPath, 
@@ -10,7 +9,6 @@ const {
     configureNamingPatterns,
     configureProjectStructure,
     configureAuthor,
-    configureMainParentChangelog,
     configureChangelog
 } = require('./src/config/setupWizard');
 const { generateChangelog } = require('./src/generators/changelogGenerator');
@@ -22,24 +20,21 @@ function activate(context) {
     const generalStatusBarItem = createGeneralStatusBarItem();
     context.subscriptions.push(generalStatusBarItem);
 
-    // Регистрируем провайдеры автодополнения для всех форматов
     registerAllCompletionProviders(context);
 
-    // Register commands for SQL generation
-    let fullSqlDisposable = vscode.commands.registerCommand(
+    let fullSql = vscode.commands.registerCommand(
         'liquibaseGenerator.generateSql', 
         () => generateSqlForChangeset(false)
     );
     
-    let contextualSqlDisposable = vscode.commands.registerCommand(
+    let partialSql = vscode.commands.registerCommand(
         'liquibaseGenerator.generateSqlFromContext', 
         () => generateSqlForChangeset(true)
     );
     
-    context.subscriptions.push(fullSqlDisposable);
-    context.subscriptions.push(contextualSqlDisposable);
+    context.subscriptions.push(fullSql);
+    context.subscriptions.push(partialSql);
 
-    // Register command to set properties path
     context.subscriptions.push(
         vscode.commands.registerCommand('liquibaseGenerator.setPropertiesPath', async () => {
             const propertiesPath = await configurePropertiesPath();
@@ -52,14 +47,12 @@ function activate(context) {
         })
     );
     
-    // Register command for full setup wizard (only for first run or manual trigger)
     context.subscriptions.push(
         vscode.commands.registerCommand('liquibaseGenerator.setupExtension', async () => {
             await startSetupWizard();
         })
     );
     
-    // Register individual settings configuration commands
     context.subscriptions.push(
         vscode.commands.registerCommand('liquibaseGenerator.configureFormats', async () => {
             const result = await configureDefaultFormats();
@@ -108,7 +101,6 @@ function activate(context) {
         })
     );
     
-    // Register command for changelog configuration
     context.subscriptions.push(
         vscode.commands.registerCommand('liquibaseGenerator.configureChangelog', async () => {
             const result = await configureChangelog();
@@ -121,7 +113,6 @@ function activate(context) {
         })
     );
     
-    // Register a command to show settings menu
     context.subscriptions.push(
         vscode.commands.registerCommand('liquibaseGenerator.showSettings', async () => {
             const selected = await vscode.window.showQuickPick([
@@ -166,11 +157,9 @@ function activate(context) {
         })
     );
     
-    // Register command for creating changelog
     context.subscriptions.push(
         vscode.commands.registerCommand('liquibaseGenerator.createChangelog', async (uri) => {
             try {
-                // If uri is provided, use it as the target directory
                 let targetDirectory = null;
                 
                 if (uri && uri.fsPath) {
@@ -181,14 +170,10 @@ function activate(context) {
                     if (stats.isDirectory()) {
                         targetDirectory = uri.fsPath;
                     } else {
-                        // If a file is selected, use its parent directory
                         targetDirectory = path.dirname(uri.fsPath);
                     }
                 }
                 
-                // Create the changelog
-                // If root changelog is configured in settings,
-                // the new changelog will be automatically connected to it
                 await generateChangelog({ targetDirectory });
             } catch (error) {
                 console.error('Error creating changelog:', error);
@@ -197,11 +182,9 @@ function activate(context) {
         })
     );
     
-    // Register command for creating changeset
     context.subscriptions.push(
         vscode.commands.registerCommand('liquibaseGenerator.createChangeset', async (uri) => {
             try {
-                // If uri is provided, use it as the target directory
                 let targetDirectory = null;
                 
                 if (uri && uri.fsPath) {
@@ -212,12 +195,10 @@ function activate(context) {
                     if (stats.isDirectory()) {
                         targetDirectory = uri.fsPath;
                     } else {
-                        // If a file is selected, use its parent directory
                         targetDirectory = path.dirname(uri.fsPath);
                     }
                 }
                 
-                // Create the changeset
                 await generateChangeset({ targetDirectory });
             } catch (error) {
                 console.error('Error creating changeset:', error);
@@ -226,33 +207,24 @@ function activate(context) {
         })
     );
     
-    // Check if this is the first run and prompt setup wizard
     checkFirstRun(context);
 }
 
-/**
- * Check if this is the first run of the extension and prompt setup wizard
- * @param {vscode.ExtensionContext} context The extension context
- */
 async function checkFirstRun(context) {
     const hasRun = context.globalState.get('liquibaseGenerator.hasRun');
     
     if (!hasRun) {
-        // Mark as run
         await context.globalState.update('liquibaseGenerator.hasRun', true);
         
-        // Show welcome message with two options
         const result = await vscode.window.showInformationMessage(
             'Welcome to Liquibase Plugin! The extension needs some initial configuration to work properly.',
-            { modal: true },  // Keep this one modal since it's important
+            { modal: true },
             'Configure Now', 'Later'
         );
         
         if (result === 'Configure Now') {
-            // Run the full setup wizard immediately
             await startSetupWizard();
         } else {
-            // Remind about configuration option for later
             const settingsInfo = await vscode.window.showInformationMessage(
                 'You can configure the plugin anytime using the "Liquibase: Plugin Settings" command in the Command Palette (Ctrl+Shift+P).',
                 { modal: false, detail: '' }

@@ -1,55 +1,40 @@
-// General utility functions
-
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-/**
- * Creates a temporary file with content
- * @param {string} content File content
- * @param {string} prefix File name prefix
- * @param {string} extension File extension
- * @returns {string} Path to the temporary file
- */
-function createTempFile(content, prefix = 'temp', extension = '.xml') {
-    const tempFileName = `${prefix}_${Date.now()}${extension}`;
-    const tempFilePath = path.join(os.tmpdir(), tempFileName);
-    
-    // If it's an XML file and doesn't have an XML declaration, add it
-    if (extension.toLowerCase() === '.xml' && !content.trim().startsWith('<?xml')) {
-      content = '<?xml version="1.0" encoding="UTF-8"?>\n' + content;
-    }
-    
-    fs.writeFileSync(tempFilePath, content);
-    return tempFilePath;
-  }
-
-/**
- * Deletes a file if it exists
- * @param {string} filePath Path to the file
- */
-function deleteFileIfExists(filePath) {
-  try {
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-    }
-  } catch (err) {
-    console.error(`Failed to delete file ${filePath}:`, err);
-  }
+function extractVariablesFromPattern(pattern) {
+  const matches = pattern.match(/\{([^}]+)\}/g) || [];
+  return matches.map(match => match.slice(1, -1));
 }
 
-/**
- * Determines if a file is a YAML file based on its extension
- * @param {string} filePath Path to the file
- * @returns {boolean} True if it's a YAML file
- */
-function isYamlFile(filePath) {
-  const ext = path.extname(filePath).toLowerCase();
-  return ext === '.yaml' || ext === '.yml';
+function getUpdatedChangelogContent(format, parentContent, relativePath) {
+  switch (format) {
+      case 'xml':
+          return parentContent.replace(
+              /<\/databaseChangeLog>\s*$/,
+              `    <include file="${relativePath}"/>\n</databaseChangeLog>\n`
+          );
+
+      case 'yaml':
+      case 'yml':
+          return parentContent + `\n  - include:\n      file: ${relativePath}\n`;
+
+      case 'json': {
+          const jsonObj = JSON.parse(parentContent);
+          if (Array.isArray(jsonObj.databaseChangeLog)) {
+              jsonObj.databaseChangeLog.push({ include: { file: relativePath } });
+              return JSON.stringify(jsonObj, null, 2);
+          } else {
+              throw new Error('Invalid parent changelog JSON structure');
+          }
+      }
+
+      default:
+          throw new Error(`Unsupported format for parent changelog: ${format}`);
+  }
 }
 
 module.exports = {
-  createTempFile,
-  deleteFileIfExists,
-  isYamlFile
+  extractVariablesFromPattern,
+  getUpdatedChangelogContent
 };

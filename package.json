@@ -20,12 +20,10 @@
       "properties": {
         "liquibaseGenerator.propertiesPath": {
           "type": "string",
-          "default": "",
           "description": "Path to liquibase.properties file"
         },
         "liquibaseGenerator.defaultChangelogFormat": {
           "type": "string",
-          "default": "xml",
           "enum": [
             "xml",
             "yaml",
@@ -36,7 +34,6 @@
         },
         "liquibaseGenerator.defaultChangesetFormat": {
           "type": "string",
-          "default": "xml",
           "enum": [
             "xml",
             "yaml",
@@ -47,22 +44,18 @@
         },
         "liquibaseGenerator.changelogNamingPattern": {
           "type": "string",
-          "default": "changelog-{date}-{name}.{ext}",
           "description": "Pattern for changelog filenames"
         },
         "liquibaseGenerator.changesetNamingPattern": {
           "type": "string",
-          "default": "changeset-{date}-{name}.{ext}",
           "description": "Pattern for changeset filenames"
         },
         "liquibaseGenerator.dateFormatInFilenames": {
           "type": "string",
-          "default": "YYYYMMDD",
           "description": "Date format in filenames (using moment.js format)"
         },
         "liquibaseGenerator.projectStructureApproach": {
           "type": "string",
-          "default": "Object-oriented",
           "enum": [
             "Object-oriented",
             "Release-oriented",
@@ -70,35 +63,12 @@
           ],
           "description": "Project structure approach for organizing changelog and changeset files"
         },
-        "liquibaseGenerator.changelogRootPath": {
-          "type": "string",
-          "default": "db/changelog",
-          "description": "Root directory for changelog files (relative to workspace)"
-        },
-        "liquibaseGenerator.changesetRootPath": {
-          "type": "string",
-          "default": "db/changelog/changesets",
-          "description": "Root directory for changeset files (relative to workspace)"
-        },
-        "liquibaseGenerator.objectDirectories": {
-          "type": "object",
-          "default": {
-            "tables": "tables",
-            "indexes": "indexes",
-            "views": "views",
-            "procedures": "procedures",
-            "functions": "functions"
-          },
-          "description": "Object directories for object-oriented approach"
-        },
         "liquibaseGenerator.defaultAuthor": {
           "type": "string",
-          "default": "",
           "description": "Default author for changelogs and changesets"
         },
         "liquibaseGenerator.mainParentChangelog": {
           "type": "string",
-          "default": "",
           "description": "Path to the main parent changelog file that all new changelogs will be connected to by default"
         },
         "liquibaseGenerator.showRootChangelogWarning": {

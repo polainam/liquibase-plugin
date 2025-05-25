@@ -1,27 +1,18 @@
-// Utilities for file operations
-
 const vscode = require('vscode');
 const fs = require('fs');
 const path = require('path');
 const moment = require('moment');
+const os = require('os');
 
-/**
- * Format filename using pattern and variables
- * @param {string} pattern Filename pattern (e.g., 'changelog-{date}-{name}.{ext}')
- * @param {Object} variables Variables to replace in pattern
- * @returns {string} Formatted filename
- */
 function formatFilename(pattern, variables) {
     let result = pattern;
     
-    // Replace date if present
     if (pattern.includes('{date}')) {
         const config = vscode.workspace.getConfiguration('liquibaseGenerator');
         const dateFormat = config.get('dateFormatInFilenames') || 'YYYYMMDD';
         result = result.replace('{date}', moment().format(dateFormat));
     }
     
-    // Replace other variables
     for (const [key, value] of Object.entries(variables)) {
         if (typeof value === 'string') {
             const regex = new RegExp(`{${key}}`, 'g');
@@ -32,113 +23,112 @@ function formatFilename(pattern, variables) {
     return result;
 }
 
-/**
- * Ensure directory exists, creating it if necessary
- * @param {string} dirPath Path to directory
- * @returns {boolean} True if directory exists or was created
- */
-function ensureDirectoryExists(dirPath) {
-    try {
-        if (!fs.existsSync(dirPath)) {
-            fs.mkdirSync(dirPath, { recursive: true });
-        }
-        return true;
-    } catch (error) {
-        console.error(`Error creating directory ${dirPath}:`, error);
-        return false;
-    }
-}
-
-/**
- * Get extension for file format
- * @param {string} format File format (xml, yaml, json, sql)
- * @returns {string} File extension
- */
-function getExtensionForFormat(format) {
-    switch (format.toLowerCase()) {
-        case 'xml': return 'xml';
-        case 'yaml': return 'yaml';
-        case 'yml': return 'yml';
-        case 'json': return 'json';
-        case 'sql': return 'sql';
-        default: return format.toLowerCase();
-    }
-}
-
-/**
- * Find root changelog file in the project
- * @param {string[]} [formats] Optional array of formats to look for (default: ['xml', 'yaml', 'json'])
- * @returns {Promise<string|null>} Path to root changelog or null if not found
- */
-async function findRootChangelog(formats = ['xml', 'yaml', 'json']) {
-    // Common names for root changelogs
-    const rootNames = [
-        'changelog-master',
-        'changelog-root',
-        'master-changelog',
-        'root-changelog',
-        'db-changelog-master',
-        'liquibase-changelog-master'
-    ];
-    
-    // Create glob pattern
-    const namePattern = `**/{${rootNames.join(',')}}`;
-    const extPattern = formats.map(f => getExtensionForFormat(f)).join(',');
-    const globPattern = `${namePattern}.{${extPattern}}`;
-    
-    // Find files matching the pattern
-    const files = await vscode.workspace.findFiles(globPattern, '**/node_modules/**');
-    
-    if (files.length === 0) {
-        return null;
-    } else if (files.length === 1) {
-        return files[0].fsPath;
-    } else {
-        // If multiple root changelogs are found, ask user to choose
-        const items = files.map(file => ({
-            label: path.basename(file.fsPath),
-            description: file.fsPath,
-            file: file.fsPath
-        }));
-        
-        const selected = await vscode.window.showQuickPick(items, {
-            placeHolder: 'Multiple root changelogs found. Please select one.',
-            title: 'Select Root Changelog'
-        });
-        
-        return selected ? selected.file : null;
-    }
-}
-
-/**
- * Find all changelog files in the project
- * @param {string[]} [formats] Optional array of formats to look for (default: ['xml', 'yaml', 'json'])
- * @returns {Promise<string[]>} Array of changelog paths
- */
-async function findAllChangelogs(formats = ['xml', 'yaml', 'json']) {
-    const extPattern = formats.map(f => getExtensionForFormat(f)).join(',');
-    const globPattern = `**/*changelog*.{${extPattern}}`;
-    
-    const files = await vscode.workspace.findFiles(globPattern, '**/node_modules/**');
-    return files.map(file => file.fsPath);
-}
-
-/**
- * Get relative path between files
- * @param {string} fromFile Path to source file
- * @param {string} toFile Path to target file
- * @returns {string} Relative path from source to target
- */
 function getRelativePath(fromFile, toFile) {
     const fromDir = path.dirname(fromFile);
     return path.relative(fromDir, toFile).replace(/\\/g, '/');
 }
 
+function setCursorToOptimalPosition(editor) {
+    try {
+        const cursorLineNum = findLineContaining(editor.document, 'CURSOR_POSITION');
+        
+        if (cursorLineNum >= 0) {
+            const line = editor.document.lineAt(cursorLineNum);
+            const lineText = line.text;
+            
+            const markerIndex = lineText.indexOf('CURSOR_POSITION');
+            
+            const newPosition = new vscode.Position(
+                cursorLineNum,
+                markerIndex
+            );
+            
+            editor.edit(editBuilder => {
+                const markerRange = new vscode.Range(
+                    cursorLineNum,
+                    markerIndex,
+                    cursorLineNum,
+                    markerIndex + 'CURSOR_POSITION'.length
+                );
+                editBuilder.delete(markerRange);
+            }).then(() => {
+                editor.selection = new vscode.Selection(newPosition, newPosition);
+                
+                editor.revealRange(
+                    new vscode.Range(newPosition, newPosition),
+                    vscode.TextEditorRevealType.InCenter
+                );
+            });
+        }
+    } catch (error) {
+        console.error('Error setting cursor position:', error);
+    }
+}
+
+function findLineContaining(document, searchString) {
+    for (let i = 0; i < document.lineCount; i++) {
+        const line = document.lineAt(i);
+        if (line.text.includes(searchString)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+async function openFilesInSplitView(file1, file2) {
+    try {
+        const doc1 = await vscode.workspace.openTextDocument(file1);
+        await vscode.window.showTextDocument(doc1, { preview: false });
+        
+        const doc2 = await vscode.workspace.openTextDocument(file2);
+        const editor = await vscode.window.showTextDocument(doc2, { 
+            viewColumn: vscode.window.activeTextEditor?.viewColumn,
+            preview: false
+        });
+
+        if (editor) {
+            setCursorToOptimalPosition(editor);
+        }
+    } catch (error) {
+        console.error('Error opening files as tabs:', error);
+        const doc = await vscode.workspace.openTextDocument(file2);
+        await vscode.window.showTextDocument(doc);
+    }
+}
+
+function createTempFile(content, prefix = 'temp', extension = '.xml') {
+    const tempFileName = `${prefix}_${Date.now()}${extension}`;
+    const tempFilePath = path.join(os.tmpdir(), tempFileName);
+    
+    if (extension.toLowerCase() === '.xml' && !content.trim().startsWith('<?xml')) {
+      content = '<?xml version="1.0" encoding="UTF-8"?>\n' + content;
+    }
+    
+    fs.writeFileSync(tempFilePath, content);
+    return tempFilePath;
+  }
+
+function deleteFileIfExists(filePath) {
+  try {
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+  } catch (err) {
+    console.error(`Failed to delete file ${filePath}:`, err);
+  }
+}
+
+function isYamlFile(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  return ext === '.yaml' || ext === '.yml';
+}
+
 module.exports = {
     formatFilename,
-    ensureDirectoryExists,
-    getExtensionForFormat,
-    findRootChangelog,
-    findAllChangelogs,
-    getRelativePath
+    getRelativePath,
+    setCursorToOptimalPosition,
+    openFilesInSplitView,
+    createTempFile,
+    deleteFileIfExists,
+    isYamlFile,
 }; 
