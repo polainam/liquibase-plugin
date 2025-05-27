@@ -1,8 +1,10 @@
 const vscode = require('vscode');
+const fs = require('fs');
+const path = require('path');
 const { createGeneralStatusBarItem } = require('./src/ui/statusBar/statusBarItem');
 const { registerAllCompletionProviders } = require('./src/intellisense');
 const { generateSqlForChangeset } = require('./src/sql/liquibaseRunner');
-const { 
+const {
     startSetupWizard, 
     configurePropertiesPath, 
     configureDefaultFormats,
@@ -11,8 +13,52 @@ const {
     configureAuthor,
     configureChangelog
 } = require('./src/config/setupWizard');
-const { generateChangelog } = require('./src/generators/changelogGenerator');
-const { generateChangeset } = require('./src/generators/changesetGenerator');
+const ChangelogGenerator = require('./src/generators/changelogGenerator');
+const ChangesetGenerator = require('./src/generators/changesetGenerator');
+
+function resolveTargetDirectory(uri) {
+    if (uri && uri.fsPath) {
+        const stats = fs.statSync(uri.fsPath);
+        return stats.isDirectory() ? uri.fsPath : path.dirname(uri.fsPath);
+    }
+    return null;
+}
+
+function registerGeneratorCommand(commandId, GeneratorClass) {
+    return vscode.commands.registerCommand(commandId, async (uri) => {
+        try {
+            const targetDirectory = resolveTargetDirectory(uri);
+            const generator = new GeneratorClass({ targetDirectory });
+            await generator.generate();
+        } catch (error) {
+            console.error(`Error executing ${commandId}:`, error);
+            vscode.window.showErrorMessage(`Failed to execute ${commandId}: ${error.message}`);
+        }
+    });
+}
+
+async function checkFirstRun(context) {
+    const hasRun = context.globalState.get('liquibaseGenerator.hasRun');
+    
+    if (!hasRun) {
+        await context.globalState.update('liquibaseGenerator.hasRun', true);
+        
+        const result = await vscode.window.showInformationMessage(
+            'Welcome to Liquibase Plugin! The extension needs some initial configuration to work properly.',
+            { modal: true },
+            'Configure Now', 'Later'
+        );
+        
+        if (result === 'Configure Now') {
+            await startSetupWizard();
+        } else {
+            const settingsInfo = await vscode.window.showInformationMessage(
+                'You can configure the plugin anytime using the "Liquibase: Plugin Settings" command in the Command Palette (Ctrl+Shift+P).',
+                { modal: false, detail: '' }
+            );
+        }
+    }
+}
 
 function activate(context) {
     console.log('Liquibase plugin activated.');
@@ -158,79 +204,11 @@ function activate(context) {
     );
     
     context.subscriptions.push(
-        vscode.commands.registerCommand('liquibaseGenerator.createChangelog', async (uri) => {
-            try {
-                let targetDirectory = null;
-                
-                if (uri && uri.fsPath) {
-                    const fs = require('fs');
-                    const path = require('path');
-                    const stats = fs.statSync(uri.fsPath);
-                    
-                    if (stats.isDirectory()) {
-                        targetDirectory = uri.fsPath;
-                    } else {
-                        targetDirectory = path.dirname(uri.fsPath);
-                    }
-                }
-                
-                await generateChangelog({ targetDirectory });
-            } catch (error) {
-                console.error('Error creating changelog:', error);
-                vscode.window.showErrorMessage(`Failed to create changelog: ${error.message}`);
-            }
-        })
+        registerGeneratorCommand('liquibaseGenerator.createChangelog', ChangelogGenerator),
+        registerGeneratorCommand('liquibaseGenerator.createChangeset', ChangesetGenerator)
     );
-    
-    context.subscriptions.push(
-        vscode.commands.registerCommand('liquibaseGenerator.createChangeset', async (uri) => {
-            try {
-                let targetDirectory = null;
-                
-                if (uri && uri.fsPath) {
-                    const fs = require('fs');
-                    const path = require('path');
-                    const stats = fs.statSync(uri.fsPath);
-                    
-                    if (stats.isDirectory()) {
-                        targetDirectory = uri.fsPath;
-                    } else {
-                        targetDirectory = path.dirname(uri.fsPath);
-                    }
-                }
-                
-                await generateChangeset({ targetDirectory });
-            } catch (error) {
-                console.error('Error creating changeset:', error);
-                vscode.window.showErrorMessage(`Failed to create changeset: ${error.message}`);
-            }
-        })
-    );
-    
-    checkFirstRun(context);
-}
 
-async function checkFirstRun(context) {
-    const hasRun = context.globalState.get('liquibaseGenerator.hasRun');
-    
-    if (!hasRun) {
-        await context.globalState.update('liquibaseGenerator.hasRun', true);
-        
-        const result = await vscode.window.showInformationMessage(
-            'Welcome to Liquibase Plugin! The extension needs some initial configuration to work properly.',
-            { modal: true },
-            'Configure Now', 'Later'
-        );
-        
-        if (result === 'Configure Now') {
-            await startSetupWizard();
-        } else {
-            const settingsInfo = await vscode.window.showInformationMessage(
-                'You can configure the plugin anytime using the "Liquibase: Plugin Settings" command in the Command Palette (Ctrl+Shift+P).',
-                { modal: false, detail: '' }
-            );
-        }
-    }
+    checkFirstRun(context);
 }
 
 function deactivate() {

@@ -1,6 +1,5 @@
 {
   "databaseChangeLog": [
-    
     {
       "include": {
         "file": "../changesets/json/create-table-person.json"

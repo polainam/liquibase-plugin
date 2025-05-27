@@ -1,7 +1,3 @@
-const vscode = require('vscode');
-const fs = require('fs');
-const path = require('path');
-
 const templates = {
   changelog: {
     xml: () => `<?xml version="1.0" encoding="UTF-8"?>
