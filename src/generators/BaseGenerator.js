@@ -3,8 +3,8 @@ const path = require('path');
 const moment = require('moment');
 const fs = require('fs');
 const fsPromises = require('fs').promises;
-const { formatFilename, getRelativePath } = require('../common/fileUtils');
-const { extractVariablesFromPattern, getUpdatedChangelogContent } = require('../common/utils');
+const { formatFilename, getRelativePath } = require('../utils/fileUtils');
+const { extractVariablesFromPattern, getUpdatedChangelogContent } = require('../utils/commonUtils');
 const { getTemplateContent } = require('./templateManager');
 
 class BaseGenerator {

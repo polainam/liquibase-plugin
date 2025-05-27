@@ -2,7 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const vscode = require('vscode');
 const BaseGenerator = require('./BaseGenerator');
-const { openFilesInSplitView, setCursorToOptimalPosition } = require('../common/fileUtils');
+const { openFilesInSplitView, setCursorToOptimalPosition } = require('../utils/fileUtils');
 
 class ChangelogGenerator extends BaseGenerator {
     getFormatConfigKey() {
@@ -59,8 +59,8 @@ class ChangelogGenerator extends BaseGenerator {
             if (!variableValues) return null;
 
             const filename = this.generateFilename(variableValues);
-            const changelogPath = path.join(targetDirectory, filename);
-
+        const changelogPath = path.join(targetDirectory, filename);
+        
             const content = this.getTemplateContent();
             await this.writeFile(changelogPath, content);
 
@@ -75,11 +75,11 @@ class ChangelogGenerator extends BaseGenerator {
             await this.openChangelogDocuments(mainParentChangelog, changelogPath);
             return changelogPath;
 
-        } catch (error) {
-            console.error('Error generating changelog:', error);
-            vscode.window.showErrorMessage(`Failed to generate changelog: ${error.message}`);
-            return null;
-        }
+    } catch (error) {
+        console.error('Error generating changelog:', error);
+        vscode.window.showErrorMessage(`Failed to generate changelog: ${error.message}`);
+        return null;
+    }
     }
 }
 

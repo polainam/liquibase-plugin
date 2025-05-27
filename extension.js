@@ -4,17 +4,14 @@ const path = require('path');
 const { createGeneralStatusBarItem } = require('./src/ui/statusBar/statusBarItem');
 const { registerAllCompletionProviders } = require('./src/intellisense');
 const { generateSqlForChangeset } = require('./src/sql/liquibaseRunner');
-const {
-    startSetupWizard, 
-    configurePropertiesPath, 
-    configureDefaultFormats,
-    configureNamingPatterns,
-    configureProjectStructure,
-    configureAuthor,
-    configureChangelog
-} = require('./src/config/setupWizard');
+const { startSetupWizard } = require('./src/wizard/setupWizard');
 const ChangelogGenerator = require('./src/generators/changelogGenerator');
 const ChangesetGenerator = require('./src/generators/changesetGenerator');
+const configurePropertiesPath = require('./src/wizard/steps/configurePropertiesPath');
+const configureDefaultFormats = require('./src/wizard/steps/configureDefaultFormats');
+const configureNamingPatterns = require('./src/wizard/steps/configureNamingPatterns');
+const configureAuthor = require('./src/wizard/steps/configureAuthor');
+const { configureChangelog } = require('./src/wizard/steps/configureChangelog');
 
 function resolveTargetDirectory(uri) {
     if (uri && uri.fsPath) {
@@ -124,18 +121,6 @@ function activate(context) {
     );
     
     context.subscriptions.push(
-        vscode.commands.registerCommand('liquibaseGenerator.configureStructure', async () => {
-            const result = await configureProjectStructure();
-            if (result) {
-                vscode.window.showInformationMessage(
-                    'Project structure configuration updated successfully',
-                    { modal: false, detail: '' }
-                );
-            }
-        })
-    );
-    
-    context.subscriptions.push(
         vscode.commands.registerCommand('liquibaseGenerator.configureAuthor', async () => {
             const result = await configureAuthor();
             if (result) {
@@ -150,7 +135,7 @@ function activate(context) {
     context.subscriptions.push(
         vscode.commands.registerCommand('liquibaseGenerator.configureChangelog', async () => {
             const result = await configureChangelog();
-            if (result && result.message) {
+            if (result && typeof result === 'object' && 'message' in result) {
                 vscode.window.showInformationMessage(
                     result.message,
                     { modal: false, detail: '' }

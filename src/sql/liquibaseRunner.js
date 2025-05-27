@@ -4,10 +4,10 @@ const yaml = require('js-yaml');
 const cp = require('child_process');
 const path = require('path');
 
-const { getLiquibasePropertiesPath } = require('../config/configManager');
 const { extractChangesetInfoAtCursor, getAllChangesets, findChangeset, isYamlFile, isJsonFile } = require('./extractors');
 const { extractChangesetSql } = require('./sqlProcessor');
-const { createTempFile, deleteFileIfExists } = require('../common/utils');
+const { getLiquibasePropertiesPath } = require('../utils/commonUtils');
+const { createTempFile, deleteFileIfExists } = require('../utils/fileUtils');
 
 /**
  * Generate SQL for a specific changeset

@@ -2,7 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const vscode = require('vscode');
 const BaseGenerator = require('./BaseGenerator');
-const { openFilesInSplitView, setCursorToOptimalPosition } = require('../common/fileUtils');
+const { openFilesInSplitView, setCursorToOptimalPosition } = require('../utils/fileUtils');
 
 class ChangesetGenerator extends BaseGenerator {
     getFormatConfigKey() {
