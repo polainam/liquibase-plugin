@@ -55,7 +55,6 @@ function registerCompletionProviderYaml(context) {
                 
                 // Фильтруем подсказки по правилам отступов
                 const filteredSuggestions = allSuggestions.filter(suggestion => {
-                    // Получаем конфигурацию тега из команды
                     const tagConfig = suggestion.command?.arguments?.[0];
                     if (!tagConfig) return false;
                     

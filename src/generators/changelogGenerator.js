@@ -1,20 +1,27 @@
 const path = require('path');
 const fs = require('fs');
 const vscode = require('vscode');
-const BaseGenerator = require('./BaseGenerator');
+const ExtensionCommand = require('../ExtensionCommand');
+
+const {
+    gatherVariableValues,
+    generateFilename,
+    getInitialVariables,
+    writeFile,
+    getTemplate,
+    addToChangelogFile
+} = require('../utils/generatorUtils');
 const { openFilesInSplitView, setCursorToOptimalPosition } = require('../utils/fileUtils');
 
-class ChangelogGenerator extends BaseGenerator {
-    getFormatConfigKey() {
-        return 'defaultChangelogFormat';
+class ChangelogGenerator extends ExtensionCommand {
+    constructor(options) {
+        super();
+        this.options = options;
+        this.config = vscode.workspace.getConfiguration('liquibaseGenerator');
     }
 
-    getNamingPatternKey() {
-        return 'changelogNamingPattern';
-    }
-
-    getTemplateType() {
-        return 'changelog';
+    getCommandId() {
+        return 'liquibaseGenerator.createChangelog';
     }
 
     async maybeShowRootWarning() {
@@ -35,37 +42,37 @@ class ChangelogGenerator extends BaseGenerator {
 
     async openChangelogDocuments(mainParentChangelog, changelogPath) {
         if (mainParentChangelog && fs.existsSync(mainParentChangelog)) {
-            const connected = await this.addToChangelogFile(mainParentChangelog, changelogPath);
+            const connected = await addToChangelogFile(mainParentChangelog, changelogPath);
             if (connected) {
                 await openFilesInSplitView(mainParentChangelog, changelogPath);
                 return;
             }
         }
-    
+
         const doc = await vscode.workspace.openTextDocument(changelogPath);
         const editor = await vscode.window.showTextDocument(doc);
         if (editor) {
             setCursorToOptimalPosition(editor);
         }
-    }    
+    }
 
-    async generate() {
+    async execute() {
         try {
             const targetDirectory = this.options.targetDirectory;
-            const initialVars = this.getInitialVariables();
-            const namingPattern = this.getNamingPattern();
+            const format = this.config.get('defaultChangelogFormat');
+            const namingPattern = this.config.get('changelogNamingPattern');
+            const initialVars = getInitialVariables(this.config, format);
 
-            const variableValues = await this.gatherVariableValues(namingPattern, initialVars);
+            const variableValues = await gatherVariableValues(namingPattern, initialVars);
             if (!variableValues) return null;
 
-            const filename = this.generateFilename(variableValues);
-        const changelogPath = path.join(targetDirectory, filename);
-        
-            const content = this.getTemplateContent();
-            await this.writeFile(changelogPath, content);
+            const filename = generateFilename(namingPattern, variableValues);
+            const changelogPath = path.join(targetDirectory, filename);
+
+            const content = getTemplate(format, 'changelog');
+            await writeFile(changelogPath, content);
 
             const mainParentChangelog = this.config.get('mainParentChangelog');
-
             if (!mainParentChangelog || !fs.existsSync(mainParentChangelog)) {
                 await this.openChangelogDocuments(null, changelogPath);
                 await this.maybeShowRootWarning();
@@ -75,11 +82,11 @@ class ChangelogGenerator extends BaseGenerator {
             await this.openChangelogDocuments(mainParentChangelog, changelogPath);
             return changelogPath;
 
-    } catch (error) {
-        console.error('Error generating changelog:', error);
-        vscode.window.showErrorMessage(`Failed to generate changelog: ${error.message}`);
-        return null;
-    }
+        } catch (error) {
+            console.error('Error generating changelog:', error);
+            vscode.window.showErrorMessage(`Failed to generate changelog: ${error.message}`);
+            return null;
+        }
     }
 }
 

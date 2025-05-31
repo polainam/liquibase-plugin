@@ -34,7 +34,7 @@ module.exports = [
     },
     {
         name: "createTable",
-        snippet: "{\n  \"createTable\": {\n    \"tableName\": \"${1:table_name}\"\n    $0\n  }\n},",
+        snippet: "{\n  \"createTable\": {\n    \"tableName\": \"${1:table_name}\",\n    $0\n  }\n},",
         documentation: "Создание новой таблицы в базе данных.",
         allowedIn: ["changes"],
         disallowedIn: ["createTable"],

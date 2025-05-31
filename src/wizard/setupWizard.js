@@ -1,62 +1,52 @@
 const vscode = require('vscode');
-const fs = require('fs');
-const path = require('path');
-const configurePropertiesPath = require('./steps/configurePropertiesPath');
-const { configureMainParentChangelog } = require('./steps/configureChangelog');
-const configureDefaultFormats = require('./steps/configureDefaultFormats');
-const configureNamingPatterns = require('./steps/configureNamingPatterns');
-const configureAuthor = require('./steps/configureAuthor');
+const ExtensionCommand = require('../ExtensionCommand');
 
-async function startSetupWizard() {
-    try {
-        const welcomeResult = await vscode.window.showInformationMessage(
-            'Welcome to Liquibase Plugin Setup Wizard. This will guide you through the configuration process.',
-            'Start', 'Cancel'
-        );
-        if (welcomeResult !== 'Start') return false;
-        
-        const propertiesPath = await configurePropertiesPath();
-        if (!propertiesPath) {
-            vscode.window.showWarningMessage('Setup wizard was canceled. You can run it again later with "Liquibase: Plugin Settings".');
-            return false;
+const configurePropertiesPath = require('../wizard/steps/configurePropertiesPath');
+const { configureMainParentChangelog } = require('../wizard/steps/configureChangelog');
+const configureDefaultFormats = require('../wizard/steps/configureDefaultFormats');
+const configureNamingPatterns = require('../wizard/steps/configureNamingPatterns');
+const configureAuthor = require('../wizard/steps/configureAuthor');
+
+class SetupWizard extends ExtensionCommand {
+    getCommandId() {
+        return 'liquibaseGenerator.setupExtension';
+    }
+
+    async execute() {
+        try {
+            const welcomeResult = await vscode.window.showInformationMessage(
+                'Welcome to Liquibase Plugin Setup Wizard. This will guide you through the configuration process.',
+                'Start', 'Cancel'
+            );
+            if (welcomeResult !== 'Start') return;
+
+            const steps = [
+                { action: configurePropertiesPath, name: 'Properties Path' },
+                { action: configureMainParentChangelog, name: 'Parent Changelog' },
+                { action: configureDefaultFormats, name: 'Default Formats' },
+                { action: configureNamingPatterns, name: 'Naming Patterns' },
+                { action: configureAuthor, name: 'Author' }
+            ];
+
+            for (const step of steps) {
+                const result = await step.action();
+                if (result === null || result === false) {
+                    vscode.window.showWarningMessage(
+                        `Setup wizard was canceled during "${step.name}". You can run it again later via "Liquibase: Plugin Settings".`
+                    );
+                    return;
+                }
+            }
+
+            vscode.window.showInformationMessage(
+                'Liquibase Plugin setup completed successfully! You can modify any settings later through the "Liquibase: Plugin Settings".',
+                { modal: false }
+            );
+        } catch (error) {
+            console.error('Error during setup wizard:', error);
+            vscode.window.showErrorMessage(`Setup failed: ${error.message}`);
         }
-        
-        const parentChangelog = await configureMainParentChangelog();
-        if (parentChangelog === null) {
-            vscode.window.showWarningMessage('Setup wizard was canceled. You can run it again later with "Liquibase: Plugin Settings".');
-            return false;
-        }
-        
-        const formatSettings = await configureDefaultFormats();
-        if (!formatSettings) {
-            vscode.window.showWarningMessage('Setup wizard was canceled. You can run it again later with "Liquibase: Plugin Settings".');
-            return false;
-        }
-        
-        const namingSettings = await configureNamingPatterns();
-        if (!namingSettings) {
-            vscode.window.showWarningMessage('Setup wizard was canceled. You can run it again later with "Liquibase: Plugin Settings".');
-            return false;
-        }
-        
-        const author = await configureAuthor();
-        if (!author) {
-            vscode.window.showWarningMessage('Setup wizard was canceled. You can run it again later with "Liquibase: Plugin Settings".');
-            return false;
-        }
-        
-        vscode.window.showInformationMessage(
-            'Liquibase Plugin setup completed successfully! You can modify any settings later through the "Liquibase: Plugin Settings".',
-            { modal: false }
-        );
-        return true;
-    } catch (error) {
-        console.error('Error during setup wizard:', error);
-        vscode.window.showErrorMessage(`Setup failed: ${error.message}`);
-        return false;
     }
 }
 
-module.exports = {
-    startSetupWizard
-};
+module.exports = SetupWizard;

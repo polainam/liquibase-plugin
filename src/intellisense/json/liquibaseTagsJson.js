@@ -1,11 +1,6 @@
 const vscode = require('vscode');
 const tags = require('./tagsConfigJson');
 
-/**
- * Получает подходящие теги Liquibase для текущего контекста в JSON
- * @param {Object} contextData Данные контекста
- * @returns {Array<vscode.CompletionItem>} Список элементов автодополнения
- */
 function getLiquibaseTags(contextData) {
     const { activeTags, isRoot, hasDatabaseChangeLog, currentIndentation } = contextData;
     

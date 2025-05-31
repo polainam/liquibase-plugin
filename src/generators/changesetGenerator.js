@@ -1,38 +1,41 @@
 const path = require('path');
 const fs = require('fs');
 const vscode = require('vscode');
-const BaseGenerator = require('./BaseGenerator');
+const ExtensionCommand = require('../ExtensionCommand');
+
+const {
+    gatherVariableValues,
+    generateFilename,
+    getInitialVariables,
+    writeFile,
+    getTemplate,
+    addToChangelogFile
+} = require('../utils/generatorUtils');
+
 const { openFilesInSplitView, setCursorToOptimalPosition } = require('../utils/fileUtils');
 
-class ChangesetGenerator extends BaseGenerator {
-    getFormatConfigKey() {
-        return 'defaultChangesetFormat';
+class ChangesetGenerator extends ExtensionCommand {
+    constructor(options) {
+        super();
+        this.options = options;
+        this.config = vscode.workspace.getConfiguration('liquibaseGenerator');
     }
 
-    getNamingPatternKey() {
-        return 'changesetNamingPattern';
+    getCommandId() {
+        return 'liquibaseGenerator.createChangeset';
     }
 
-    getTemplateType() {
-        return 'changeset';
-    }
-
-    getInitialVariables() {
-        const variables = super.getInitialVariables();
-        variables.author = this.config.get('defaultAuthor');
-        return variables;
-    }
-
-    async generate() {
+    async execute() {
         try {
             const targetDirectory = this.options.targetDirectory;
-            const initialVars = this.getInitialVariables();
-            const namingPattern = this.getNamingPattern();
+            const format = this.config.get('defaultChangesetFormat');
+            const namingPattern = this.config.get('changesetNamingPattern');
+            const initialVars = getInitialVariables(this.config, format);
 
-            const variableValues = await this.gatherVariableValues(namingPattern, initialVars);
+            const variableValues = await gatherVariableValues(namingPattern, initialVars);
             if (!variableValues) return null;
 
-            const filename = this.generateFilename(variableValues);
+            const filename = generateFilename(namingPattern, variableValues);
             const changesetPath = path.join(targetDirectory, filename);
 
             const templateData = {
@@ -40,8 +43,8 @@ class ChangesetGenerator extends BaseGenerator {
                 author: variableValues.author
             };
 
-            const content = this.getTemplateContent(templateData);
-            await this.writeFile(changesetPath, content);
+            const content = getTemplate(format, 'changeset', templateData);
+            await writeFile(changesetPath, content);
 
             const connected = await this.tryToConnectToChangelog(changesetPath, targetDirectory);
             if (connected) return changesetPath;
@@ -66,7 +69,7 @@ class ChangesetGenerator extends BaseGenerator {
         const associatedChangelog = folderMappings[targetDirectory];
 
         if (associatedChangelog && fs.existsSync(associatedChangelog)) {
-            const connected = await this.addToChangelogFile(associatedChangelog, changesetPath, { showInfoMessageIfExists: true });
+            const connected = await addToChangelogFile(associatedChangelog, changesetPath, { showInfoMessageIfExists: true });
             if (connected) {
                 await openFilesInSplitView(associatedChangelog, changesetPath);
                 return true;
@@ -95,7 +98,7 @@ class ChangesetGenerator extends BaseGenerator {
         if (!changelogUri || changelogUri.length === 0) return false;
 
         const changelogPath = changelogUri[0].fsPath;
-        const connected = await this.addToChangelogFile(changelogPath, changesetPath);
+        const connected = await addToChangelogFile(changelogPath, changesetPath);
         if (!connected) return false;
 
         const rememberChoice = await vscode.window.showQuickPick(

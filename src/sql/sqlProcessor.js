@@ -1,5 +1,3 @@
-// Functions for processing SQL output
-
 /**
 * Extract the actual changeset SQL from the full SQL output
  * @param {string} fullSql Full SQL output from liquibase

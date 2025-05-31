@@ -1,10 +1,8 @@
-const vscode = require('vscode');
-
 function analyzeContext(document, position) {
   const fullText = document.getText();
   const lineNumber = position.line;
   const lines = fullText.split(/\r?\n/);
-  
+
   // Отладочная информация
   console.log('Analyzing YAML at line:', lineNumber);
   
@@ -118,11 +116,6 @@ function getIndentation(line) {
   return match ? match[1].length : 0;
 }
 
-// Проверяет, является ли строка элементом списка (начинается с "- ")
-function isListItem(line) {
-  return line.trim().startsWith('-');
-}
-
 module.exports = {
   analyzeContext
-}; 
+};

@@ -2,8 +2,7 @@ databaseChangeLog:
   - changeSet:
       id: create-person-table-yaml
       author: mezentseva.pa@edu.spbstu.ru
-      changes:
-        
+      changes:  
         - createTable:
             tableName: person_yaml
             columns:
@@ -23,7 +22,7 @@ databaseChangeLog:
                   type: varchar(50)
               - column:
                   name: city
-                  type: varchar(30)                        
+                  type: varchar(30)         
   - changeSet:
       id: create-person-table-yaml-1
       author: mezentseva.pa@edu.spbstu.ru

@@ -51,11 +51,11 @@ function isJsonFile(filePath) {
  * Returns extractor for specified format
  */
 function getExtractorForFormat(format) {
-  const extractor = extractorInstances[format];
-  if (!extractor) {
+  const ExtractorClass = extractorInstances[format];
+  if (!ExtractorClass) {
     throw new Error(`No extractor available for format: ${format}`);
   }
-  return extractor;
+  return new ExtractorClass();
 }
 
 /**

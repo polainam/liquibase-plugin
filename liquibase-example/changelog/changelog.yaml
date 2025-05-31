@@ -1,3 +1,1 @@
 databaseChangeLog:
-  - include:
-      file: ../changesets/changeset-20250521-врпап.sql
