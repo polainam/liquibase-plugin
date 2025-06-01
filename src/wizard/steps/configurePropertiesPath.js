@@ -1,8 +1,9 @@
 const vscode = require('vscode');
 const fs = require('fs');
+const { getLiquibaseConfig } = require('../../common/workspaceConfig')
 
 async function configurePropertiesPath() {
-    const config = vscode.workspace.getConfiguration('liquibaseGenerator');
+    const config = getLiquibaseConfig();
     let propertiesPath = config.get('propertiesPath');
     
     if (propertiesPath && fs.existsSync(propertiesPath)) {

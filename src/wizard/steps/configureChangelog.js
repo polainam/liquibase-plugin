@@ -1,8 +1,9 @@
 const vscode = require('vscode');
 const path = require('path');
+const { getLiquibaseConfig } = require('../../common/workspaceConfig')
 
 async function configureMainParentChangelog() {
-    const config = vscode.workspace.getConfiguration('liquibaseGenerator');
+    const config = getLiquibaseConfig();
     const currentParentChangelog = config.get('mainParentChangelog') || '';
     
     const setupParent = await vscode.window.showQuickPick([
@@ -48,7 +49,7 @@ async function configureMainParentChangelog() {
 }
 
 async function configureFolderChangelog() {
-    const config = vscode.workspace.getConfiguration('liquibaseGenerator');
+    const config = getLiquibaseConfig();
     
     const folderUris = await vscode.window.showOpenDialog({
         canSelectFolders: true,

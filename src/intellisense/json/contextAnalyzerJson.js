@@ -1,4 +1,5 @@
 const jsonc = require('jsonc-parser');
+const { getIndentation } = require('../../common/textTemplates');
 
 function analyzeContext(document, position) {
   const text = document.getText();
@@ -38,11 +39,6 @@ function analyzeContext(document, position) {
     hasDatabaseChangeLog,
     currentIndentation
   };
-}
-
-function getIndentation(line) {
-  const match = line.match(/^(\s*)/);
-  return match ? match[1].length : 0;
 }
 
 module.exports = {

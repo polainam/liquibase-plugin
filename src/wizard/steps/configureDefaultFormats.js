@@ -1,7 +1,8 @@
 const vscode = require('vscode');
+const { getLiquibaseConfig } = require('../../common/workspaceConfig')
 
 async function configureDefaultFormats() {
-    const config = vscode.workspace.getConfiguration('liquibaseGenerator');
+    const config = getLiquibaseConfig();
     const formatOptions = ['XML', 'YAML', 'JSON', 'SQL'];
     
     const currentChangelogFormat = config.get('defaultChangelogFormat');

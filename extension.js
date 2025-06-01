@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { createGeneralStatusBarItem } = require('./src/ui/statusBar/statusBarItem');
 const { configureChangelog } = require('./src/wizard/steps/configureChangelog');
+const { resolveTargetDirectory } = require('./src/common/workspaceConfig');
 
 const configurePropertiesPath = require('./src/wizard/steps/configurePropertiesPath');
 const configureDefaultFormats = require('./src/wizard/steps/configureDefaultFormats');
@@ -20,14 +21,6 @@ const setupWizard = new SetupWizard();
 
 const IntellisenseProvider = require('./src/intellisense/IntellisenseProvider');
 const provider = new IntellisenseProvider();
-
-function resolveTargetDirectory(uri) {
-    if (uri && uri.fsPath) {
-        const stats = fs.statSync(uri.fsPath);
-        return stats.isDirectory() ? uri.fsPath : path.dirname(uri.fsPath);
-    }
-    return null;
-}
 
 async function checkFirstRun(context) {
     const hasRun = context.globalState.get('liquibaseGenerator.hasRun');

@@ -1,7 +1,8 @@
 const vscode = require('vscode');
+const { getLiquibaseConfig } = require('../../common/workspaceConfig')
 
 async function configureNamingPatterns() {
-    const config = vscode.workspace.getConfiguration('liquibaseGenerator');
+    const config = getLiquibaseConfig();
     const currentDateFormat = config.get('dateFormatInFilenames');
     
     const dateFormat = await vscode.window.showInputBox({

@@ -68,9 +68,9 @@ CURSOR_POSITION
   }
 };
 
-function getTemplateContent(format, fileType, data) {
-  const builtInTemplate = getBuiltInTemplate(format, fileType);
-  return fileType === 'changeset' ? fillTemplate(builtInTemplate, data) : builtInTemplate;
+function getTemplate(configFormat, type, templateData = {}) {
+  const builtInTemplate = getBuiltInTemplate(configFormat, type);
+  return type === 'changeset' ? fillTemplate(builtInTemplate, templateData) : builtInTemplate;
 }
 
 function getBuiltInTemplate(format, fileType) {
@@ -99,7 +99,7 @@ function fillTemplate(template, data) {
 }
 
 module.exports = {
-  getTemplateContent,
+  getTemplate,
   getBuiltInTemplate,
   fillTemplate
 };

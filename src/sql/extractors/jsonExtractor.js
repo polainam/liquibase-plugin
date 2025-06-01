@@ -1,13 +1,7 @@
-const BaseExtractor = require('./BaseExtractor'); // путь к базовому классу, поправь по необходимости
+const BaseExtractor = require('./BaseExtractor');
 
 class JsonExtractor extends BaseExtractor {
-  /**
-   * Находит начальную строку changeset по id и author
-   * @param {string} content
-   * @param {string} id
-   * @param {string} author
-   * @returns {number}
-   */
+
   findChangesetStartLine(content, id, author) {
     const lines = this.splitLines(content);
     for (let i = 0; i < lines.length; i++) {
@@ -30,12 +24,6 @@ class JsonExtractor extends BaseExtractor {
     return 0;
   }
 
-  /**
-   * Находит конечную строку changeset
-   * @param {string} content
-   * @param {number} startLine
-   * @returns {number}
-   */
   findChangesetEndLine(content, startLine) {
     const lines = this.splitLines(content);
     let braceCount = 0;

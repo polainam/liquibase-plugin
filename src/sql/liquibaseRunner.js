@@ -1,10 +1,9 @@
 const cp = require('child_process');
 const path = require('path');
+const { createLiquibaseCommand } = require('../common/liquibaseCommands');
 
 function runLiquibase(propertiesPath, tempFilePath, workspaceFolder) {
-  const tempFileName = path.basename(tempFilePath);
-
-  const liquibaseCmd = `liquibase --defaultsFile="${propertiesPath}" --changeLogFile="${tempFileName}" --searchPath="${path.dirname(tempFilePath)},${workspaceFolder}" updateSql`;
+  const liquibaseCmd = createLiquibaseCommand(propertiesPath, tempFilePath, workspaceFolder);
 
   return new Promise((resolve, reject) => {
     cp.exec(liquibaseCmd, { cwd: workspaceFolder }, (err, stdout, stderr) => {

@@ -4,11 +4,6 @@
       "include": {
         "file": "../changesets/json/create-table-person.json"
       }
-    },
-    {
-      "include": {
-        "file": "changelog-fgng.xml"
-      }
     }
   ]
 }

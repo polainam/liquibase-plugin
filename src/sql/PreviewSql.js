@@ -3,13 +3,13 @@ const path = require('path');
 
 const ExtensionCommand = require('../ExtensionCommand');
 
-const { extractChangesetInfoAtCursor, getAllChangesets, isYamlFile, isJsonFile } = require('./extractors/extractorFactory');
+const { extractChangesetInfoAtCursor, getAllChangesets, isYamlFile, isJsonFile } = require('./extractors/ExtractorFactory');
 const { buildTempChangelog } = require('./changeloBuilder');
 const { runLiquibase } = require('./liquibaseRunner');
 const { promptSelectChangeset, promptSelectSqlType } = require('./promptUser');
 const { extractChangesetSql } = require('./sqlProcessor');
-const { createTempFile, deleteFileIfExists } = require('../utils/fileUtils');
-const { getLiquibasePropertiesPath } = require('../utils/commonUtils');
+const { createTempFile, deleteFileIfExists } = require('../common/fileOperations');
+const { getLiquibasePropertiesPath } = require('../common/workspaceConfig');
 
 class PreviewSql extends ExtensionCommand {
     constructor() {

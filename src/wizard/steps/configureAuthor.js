@@ -1,7 +1,8 @@
 const vscode = require('vscode');
+const { getLiquibaseConfig } = require('../../common/workspaceConfig')
 
 async function configureAuthor() {
-    const config = vscode.workspace.getConfiguration('liquibaseGenerator');
+    const config = getLiquibaseConfig();
     const currentAuthor = config.get('defaultAuthor') || process.env.USER || process.env.USERNAME || '';
     
     const author = await vscode.window.showInputBox({

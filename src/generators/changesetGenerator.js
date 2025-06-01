@@ -2,23 +2,18 @@ const path = require('path');
 const fs = require('fs');
 const vscode = require('vscode');
 const ExtensionCommand = require('../ExtensionCommand');
-
-const {
-    gatherVariableValues,
-    generateFilename,
-    getInitialVariables,
-    writeFile,
-    getTemplate,
-    addToChangelogFile
-} = require('../utils/generatorUtils');
-
-const { openFilesInSplitView, setCursorToOptimalPosition } = require('../utils/fileUtils');
+const { addToChangelogFile } = require('./utils');
+const { getTemplate } = require('./templateFactory')
+const { openFilesInSplitView, setCursorToOptimalPosition } = require('../common/editorView');
+const { gatherVariableValues, getInitialVariables } = require('../common/textTemplates');
+const { formatFilename, writeFile } = require('../common/fileOperations')
+const { getLiquibaseConfig } = require('../common/workspaceConfig')
 
 class ChangesetGenerator extends ExtensionCommand {
     constructor(options) {
         super();
         this.options = options;
-        this.config = vscode.workspace.getConfiguration('liquibaseGenerator');
+        this.config = getLiquibaseConfig();
     }
 
     getCommandId() {
@@ -35,7 +30,7 @@ class ChangesetGenerator extends ExtensionCommand {
             const variableValues = await gatherVariableValues(namingPattern, initialVars);
             if (!variableValues) return null;
 
-            const filename = generateFilename(namingPattern, variableValues);
+            const filename = formatFilename(namingPattern, variableValues);
             const changesetPath = path.join(targetDirectory, filename);
 
             const templateData = {

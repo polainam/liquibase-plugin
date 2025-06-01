@@ -3,7 +3,6 @@ const XmlExtractor = require('./XmlExtractor');
 const YamlExtractor = require('./YamlExtractor');
 const JsonExtractor = require('./JsonExtractor');
 
-// Cache of extractors
 const extractorInstances = {
   xml: XmlExtractor,
   yaml: YamlExtractor,

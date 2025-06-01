@@ -1,3 +1,5 @@
+const { getIndentation } = require('../../common/textTemplates');
+
 function analyzeContext(document, position) {
   const fullText = document.getText();
   const offset = document.offsetAt(position);
@@ -74,11 +76,6 @@ function analyzeContext(document, position) {
     inTag: false,
     currentIndentation,
   };
-}
-
-function getIndentation(line) {
-  const match = line.match(/^(\s*)/);
-  return match ? match[1].length : 0;
 }
 
 module.exports = {

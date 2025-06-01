@@ -1,3 +1,5 @@
+const { getIndentation } = require('../../common/textTemplates');
+
 function analyzeContext(document, position) {
   const fullText = document.getText();
   const lineNumber = position.line;
@@ -108,12 +110,6 @@ function analyzeContext(document, position) {
     hasDatabaseChangeLog,
     currentIndentation
   };
-}
-
-// Вспомогательная функция для определения уровня отступа
-function getIndentation(line) {
-  const match = line.match(/^(\s*)/);
-  return match ? match[1].length : 0;
 }
 
 module.exports = {
