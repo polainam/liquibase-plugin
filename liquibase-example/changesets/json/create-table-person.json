@@ -4,8 +4,7 @@
       "changeSet": {
         "id": "create-person-table-json",
         "author": "mezentseva.pa@edu.spbstu.ru",   
-        "changes": [
-          
+        "changes": [     
           {     
             "createTable": {
               "tableName": "person_json",
@@ -17,7 +16,7 @@
                     "constraints": {
                       "primaryKey": "true",
                       "nullable": "false"
-                     }
+                     } 
                   }
                 },
                 {

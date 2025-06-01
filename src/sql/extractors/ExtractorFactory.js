@@ -1,7 +1,7 @@
 const path = require('path');
-const XmlExtractor = require('./xmlExtractor');
-const YamlExtractor = require('./yamlExtractor');
-const JsonExtractor = require('./jsonExtractor');
+const XmlExtractor = require('./XmlExtractor');
+const YamlExtractor = require('./YamlExtractor');
+const JsonExtractor = require('./JsonExtractor');
 
 // Cache of extractors
 const extractorInstances = {

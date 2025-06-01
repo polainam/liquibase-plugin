@@ -11,7 +11,7 @@ databaseChangeLog:
                   type: serial
                   constraints:
                     primaryKey: true
-                    nullable: false
+                    nullable: false            
               - column:
                   name: name
                   type: varchar(50)
@@ -22,7 +22,7 @@ databaseChangeLog:
                   type: varchar(50)
               - column:
                   name: city
-                  type: varchar(30)         
+                  type: varchar(30)                    
   - changeSet:
       id: create-person-table-yaml-1
       author: mezentseva.pa@edu.spbstu.ru

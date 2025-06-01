@@ -2,7 +2,6 @@ const vscode = require('vscode');
 const fs = require('fs');
 const path = require('path');
 const { createGeneralStatusBarItem } = require('./src/ui/statusBar/statusBarItem');
-const { registerAllCompletionProviders } = require('./src/intellisense');
 const { configureChangelog } = require('./src/wizard/steps/configureChangelog');
 
 const configurePropertiesPath = require('./src/wizard/steps/configurePropertiesPath');
@@ -15,9 +14,12 @@ const previewSql = new PreviewSql();
 
 const ChangelogGenerator = require('./src/generators/changelogGenerator');
 const ChangesetGenerator = require('./src/generators/changesetGenerator');
+
 const SetupWizard = require('./src/wizard/setupWizard');
 const setupWizard = new SetupWizard();
 
+const IntellisenseProvider = require('./src/intellisense/IntellisenseProvider');
+const provider = new IntellisenseProvider();
 
 function resolveTargetDirectory(uri) {
     if (uri && uri.fsPath) {
@@ -52,8 +54,7 @@ function activate(context) {
     console.log('Liquibase plugin activated.');
 
     context.subscriptions.push(createGeneralStatusBarItem());
-
-    registerAllCompletionProviders(context);
+    context.subscriptions.push(provider.execute());
 
     context.subscriptions.push(
         vscode.commands.registerCommand('liquibaseGenerator.generateSql', () => previewSql.execute(false)),

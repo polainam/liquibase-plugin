@@ -10,9 +10,9 @@ class ExtensionCommand {
     }
 
     /**
- * @returns {Promise<any>}
- */
-    async execute() {
+    * @returns {any}
+    */
+    execute() {
         throw new Error('execute() must be implemented.');
     }
 }
