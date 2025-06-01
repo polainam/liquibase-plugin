@@ -60,7 +60,7 @@ class ChangesetGenerator extends ExtensionCommand {
     }
 
     async tryToConnectToChangelog(changesetPath, targetDirectory) {
-        const folderMappings = this.config.get('folderChangelogMappings') || {};
+        const folderMappings = getLiquibaseConfig().get('folderChangelogMappings') || {};
         const associatedChangelog = folderMappings[targetDirectory];
 
         if (associatedChangelog && fs.existsSync(associatedChangelog)) {

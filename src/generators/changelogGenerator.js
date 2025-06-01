@@ -69,7 +69,7 @@ class ChangelogGenerator extends ExtensionCommand {
             const content = getTemplate(format, 'changelog');
             await writeFile(changelogPath, content);
 
-            const mainParentChangelog = this.config.get('mainParentChangelog');
+            const mainParentChangelog = getLiquibaseConfig().get('mainParentChangelog');
             if (!mainParentChangelog || !fs.existsSync(mainParentChangelog)) {
                 await this.openChangelogDocuments(null, changelogPath);
                 await this.maybeShowRootWarning();
