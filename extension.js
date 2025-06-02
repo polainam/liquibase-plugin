@@ -11,14 +11,27 @@ const configureDefaultFormats = require('./src/wizard/steps/configureDefaultForm
 const configureNamingPatterns = require('./src/wizard/steps/configureNamingPatterns');
 const configureAuthor = require('./src/wizard/steps/configureAuthor');
 
+// const IntellisenseProvider = require('./src/intellisense/IntellisenseProvider');
+// const provider = new IntellisenseProvider();
+const getAllProviders = require('./src/intellisense/index');
 const IntellisenseProvider = require('./src/intellisense/IntellisenseProvider');
-const provider = new IntellisenseProvider();
+
 
 function activate(context) {
     console.log('Liquibase plugin activated.');
 
     context.subscriptions.push(createGeneralStatusBarItem());
-    context.subscriptions.push(provider.register());
+    // context.subscriptions.push(provider.register());
+
+    const providers = getAllProviders();
+
+    providers.forEach(provider => {
+        if (!(provider instanceof IntellisenseProvider)) {
+            console.warn(`Provider ${provider.constructor.name} не наследует IntellisenseProvider. Пропускаем.`);
+            return;
+        }
+        context.subscriptions.push(provider.register());
+    });
 
     context.subscriptions.push(
         vscode.commands.registerCommand('liquibaseGenerator.setPropertiesPath', async () => {

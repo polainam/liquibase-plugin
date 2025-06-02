@@ -1,43 +1,40 @@
 const vscode = require('vscode');
-const yaml = require('./yaml/YamlProvider');
-const xml = require('./xml/XmlProvider');
-const json = require('./json/JsonProvider');
-
-const languageProviders = {
-    yaml,
-    xml,
-    json
-};
 
 class IntellisenseProvider {
-    constructor() {
-        this.selector = Object.keys(languageProviders).map(lang => ({ language: lang, scheme: 'file' }));
+    constructor(languageId) {
+        this.languageId = languageId;
+        this.selector = [{ language: languageId, scheme: 'file' }];
+    }
+
+    analyzeContext(document, position) {
+        throw new Error('analyzeContext must be implemented by subclass');
+    }
+
+    getSuggestions(contextData) {
+        throw new Error('getSuggestions must be implemented by subclass');
+    }
+
+    isIndentationValid(tagConfig, contextData, parentTag) {
+        throw new Error('isIndentationValid must be implemented by subclass');
     }
 
     register() {
-        const provider = vscode.languages.registerCompletionItemProvider(
+        return vscode.languages.registerCompletionItemProvider(
             this.selector,
             {
                 provideCompletionItems: (document, position) => {
-                    const languageId = document.languageId;
-
-                    const provider = languageProviders[languageId];
-                    if (!provider) return [];
-
-                    const contextData = provider.analyzeContext(document, position);
-                    const allSuggestions = provider.getSuggestions(contextData);
+                    const contextData = this.analyzeContext(document, position);
+                    const allSuggestions = this.getSuggestions(contextData);
 
                     const parentTag = contextData.activeTags?.[contextData.activeTags.length - 1] || null;
 
                     return allSuggestions.filter(suggestion => {
                         const tagConfig = suggestion.command?.arguments?.[0];
-                        return tagConfig && provider.isIndentationValid(tagConfig, contextData, parentTag);
+                        return tagConfig && this.isIndentationValid(tagConfig, contextData, parentTag);
                     });
                 }
             }
         );
-
-        return provider;
     }
 }
 

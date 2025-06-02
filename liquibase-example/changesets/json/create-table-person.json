@@ -3,15 +3,15 @@
     {
       "changeSet": {
         "id": "create-person-table-json",
-        "author": "mezentseva.pa@edu.spbstu.ru",   
-        "changes": [     
-          {     
+        "author": "mezentseva.pa@edu.spbstu.ru",  
+        "changes": [      
+          {            
             "createTable": {
               "tableName": "person_json",
               "columns": [
-                {
+                {   
                   "column": {
-                    "name": "id",
+                    "name": "id",          
                     "type": "serial",
                     "constraints": {
                       "primaryKey": "true",
