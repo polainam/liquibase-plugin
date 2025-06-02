@@ -93,10 +93,6 @@
         "title": "Liquibase: Generate SQL for Changeset"
       },
       {
-        "command": "liquibaseGenerator.generateSqlFromContext",
-        "title": "Liquibase: Generate SQL for Changeset"
-      },
-      {
         "command": "liquibaseGenerator.setPropertiesPath",
         "title": "Liquibase: Set Properties File Path"
       },
@@ -140,10 +136,6 @@
     "menus": {
       "commandPalette": [
         {
-          "command": "liquibaseGenerator.generateSqlFromContext",
-          "when": "false"
-        },
-        {
           "command": "liquibaseGenerator.setPropertiesPath",
           "when": "false"
         },
@@ -178,23 +170,6 @@
         {
           "command": "liquibaseGenerator.createChangeset",
           "when": "false"
-        }
-      ],
-      "editor/context": [
-        {
-          "command": "liquibaseGenerator.generateSqlFromContext",
-          "group": "liquibase",
-          "when": "editorLangId == xml"
-        },
-        {
-          "command": "liquibaseGenerator.generateSqlFromContext",
-          "group": "liquibase",
-          "when": "editorLangId == yaml"
-        },
-        {
-          "command": "liquibaseGenerator.generateSqlFromContext",
-          "group": "liquibase",
-          "when": "editorLangId == json"
         }
       ],
       "explorer/context": [

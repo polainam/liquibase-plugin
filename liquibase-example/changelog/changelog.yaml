@@ -1,10 +1,1 @@
 databaseChangeLog:
-
-  - include:
-      file: ../changesets/changeset-20250601-dfb.xml
-
-  - include:
-      file: ../changeset-20250601-vsfv.xml
-
-  - include:
-      file: ../changesets/changeset-20250602-выывс.xml

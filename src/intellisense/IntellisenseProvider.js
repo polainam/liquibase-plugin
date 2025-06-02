@@ -1,6 +1,4 @@
 const vscode = require('vscode');
-const ExtensionCommand = require('../ExtensionCommand');
-
 const yaml = require('./yaml/YamlProvider');
 const xml = require('./xml/XmlProvider');
 const json = require('./json/JsonProvider');
@@ -11,17 +9,12 @@ const languageProviders = {
     json
 };
 
-class IntellisenseProvider extends ExtensionCommand {
+class IntellisenseProvider {
     constructor() {
-        super();
         this.selector = Object.keys(languageProviders).map(lang => ({ language: lang, scheme: 'file' }));
     }
 
-    getCommandId() {
-        return 'liquibase.intellisense.register';
-    }
-
-    execute() {
+    register() {
         const provider = vscode.languages.registerCompletionItemProvider(
             this.selector,
             {

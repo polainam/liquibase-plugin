@@ -1,11 +1,11 @@
 const vscode = require('vscode');
 const ExtensionCommand = require('../ExtensionCommand');
 
-const configurePropertiesPath = require('../wizard/steps/configurePropertiesPath');
-const { configureMainParentChangelog } = require('../wizard/steps/configureChangelog');
-const configureDefaultFormats = require('../wizard/steps/configureDefaultFormats');
-const configureNamingPatterns = require('../wizard/steps/configureNamingPatterns');
-const configureAuthor = require('../wizard/steps/configureAuthor');
+const configurePropertiesPath = require('./steps/configurePropertiesPath');
+const { configureMainParentChangelog } = require('./steps/configureChangelog');
+const configureDefaultFormats = require('./steps/configureDefaultFormats');
+const configureNamingPatterns = require('./steps/configureNamingPatterns');
+const configureAuthor = require('./steps/configureAuthor');
 
 class SetupWizard extends ExtensionCommand {
     getCommandId() {

@@ -17,7 +17,7 @@ class PreviewSql extends ExtensionCommand {
     }
 
     getCommandId() {
-        return 'extension.previewSql';  // например, уникальный ID команды
+        return 'liquibaseGenerator.generateSql';
     }
 
     async execute(contextual = false) {

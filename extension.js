@@ -1,62 +1,24 @@
 const vscode = require('vscode');
-const fs = require('fs');
-const path = require('path');
+
 const { createGeneralStatusBarItem } = require('./src/ui/statusBar/statusBarItem');
-const { configureChangelog } = require('./src/wizard/steps/configureChangelog');
+const { commands } = require('./src/index');
+const ExtensionCommand = require('./src/ExtensionCommand')
 const { resolveTargetDirectory } = require('./src/common/workspaceConfig');
 
+const { configureChangelog } = require('./src/wizard/steps/configureChangelog');
 const configurePropertiesPath = require('./src/wizard/steps/configurePropertiesPath');
 const configureDefaultFormats = require('./src/wizard/steps/configureDefaultFormats');
 const configureNamingPatterns = require('./src/wizard/steps/configureNamingPatterns');
 const configureAuthor = require('./src/wizard/steps/configureAuthor');
 
-const PreviewSql = require('./src/sql/PreviewSql');
-const previewSql = new PreviewSql();
-
-const ChangelogGenerator = require('./src/generators/changelogGenerator');
-const ChangesetGenerator = require('./src/generators/changesetGenerator');
-
-const SetupWizard = require('./src/wizard/setupWizard');
-const setupWizard = new SetupWizard();
-
 const IntellisenseProvider = require('./src/intellisense/IntellisenseProvider');
 const provider = new IntellisenseProvider();
-
-async function checkFirstRun(context) {
-    const hasRun = context.globalState.get('liquibaseGenerator.hasRun');
-    if (!hasRun) {
-        await context.globalState.update('liquibaseGenerator.hasRun', true);
-
-        const result = await vscode.window.showInformationMessage(
-            'Welcome to Liquibase Plugin! The extension needs some initial configuration to work properly.',
-            { modal: true },
-            'Configure Now', 'Later'
-        );
-
-        if (result === 'Configure Now') {
-            await setupWizard.execute();
-        } else {
-            await vscode.window.showInformationMessage(
-                'You can configure the plugin anytime using the "Liquibase: Plugin Settings" command in the Command Palette (Ctrl+Shift+P).'
-            );
-        }
-    }
-}
 
 function activate(context) {
     console.log('Liquibase plugin activated.');
 
     context.subscriptions.push(createGeneralStatusBarItem());
-    context.subscriptions.push(provider.execute());
-
-    context.subscriptions.push(
-        vscode.commands.registerCommand('liquibaseGenerator.generateSql', () => previewSql.execute(false)),
-        vscode.commands.registerCommand('liquibaseGenerator.generateSqlFromContext', () => previewSql.execute(true)),
-    );
-
-    context.subscriptions.push(
-        vscode.commands.registerCommand(setupWizard.getCommandId(), () => setupWizard.execute())
-    );
+    context.subscriptions.push(provider.register());
 
     context.subscriptions.push(
         vscode.commands.registerCommand('liquibaseGenerator.setPropertiesPath', async () => {
@@ -133,25 +95,34 @@ function activate(context) {
             }
         })
     );
+    
+    for (const command of commands) {
+        if (!(command instanceof ExtensionCommand)) {
+            console.warn('Пропускаем объект, не являющийся ExtensionCommand:', command);
+            continue;
+        }
 
-    const generators = [new ChangelogGenerator({}), new ChangesetGenerator({})];
+        const commandId = command.getCommandId();
 
-    for (const generator of generators) {
-        const commandId = generator.getCommandId();
+        if (!commandId) {
+            console.warn('Команда не имеет commandId, пропускаем:', command);
+            continue;
+        }
+
         const disposable = vscode.commands.registerCommand(commandId, async (uri) => {
-            try {
-                const targetDirectory = resolveTargetDirectory(uri);
-                generator.options.targetDirectory = targetDirectory;
-                await generator.execute();
-            } catch (error) {
-                console.error(`Error executing ${commandId}:`, error);
-                vscode.window.showErrorMessage(`Failed to execute ${commandId}: ${error.message}`);
+        try {
+            if ('options' in command && typeof command.options === 'object' && typeof uri === 'object') {
+                command.options.targetDirectory = resolveTargetDirectory(uri);
             }
-        });
-        context.subscriptions.push(disposable);
-    }
+            await command.execute();
+        } catch (error) {
+            console.error(`Ошибка выполнения команды ${commandId}:`, error);
+            vscode.window.showErrorMessage(`Ошибка выполнения команды ${commandId}: ${error.message}`);
+        }
+    });
 
-    checkFirstRun(context);
+    context.subscriptions.push(disposable);
+  }
 }
 
 function deactivate() {
