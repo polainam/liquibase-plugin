@@ -1,23 +1,81 @@
-# liquibase-plugin-draft  
+# Liquibase Plugin for VS Code
 
-## Предварительная настройка
-Перед использованием **обязательно** укажите путь до файла `liquibase.properties`.
-1. Откройте палитру команд через статус-бар или комбинацией Ctrl + Shift + P.
-2. Выберите или введите команду:
-Liquibase: Set Properties File Path
-3. В открывшемся проводнике выберите ваш файл liquibase.properties.
+This Visual Studio Code extension simplifies working with Liquibase by automating routine tasks and enhancing the user experience.
 
-Путь сохранится в настройках плагина и будет использоваться по умолчанию.
+## Getting Started
 
-// TODO описать как запускать тестовые примеры с бд
+### Setup Wizard
 
-## Задачи
-1. Рефакторинг - выделить базовые классы и /common
-2. Покрыть тестами
-     
-## Полезные материалы и ссылки
-1. State of Database DevOps Report 2025 (page 10, 11): https://cdn.prod.website-files.com/65c3a844357606c1b08a1e98/67eb0091b50266b291b30a32_State%20of%20Database%20DevOps%20Report%202025.pdf
-2. Report_2019-Survey-State-of-Database-Deployments-in-Application-Delivery: https://resources.liquibase.com/hubfs/Resources/Report_2019-Survey-State-of-Database-Deployments-in-Application-Delivery.pdf
-3. DataBase DevOps: https://www.liquibase.com/resources/guides/database-devops
+After installing the extension, launch the setup wizard to configure your environment:
+
+1. Press `Ctrl+Shift+P` or click the Liquibase icon in the status bar
+2. Run the command **Liquibase: Run Full Setup Wizard**
+3. Follow the prompts to configure:
+   - Path to your `liquibase.properties` file
+   - Main (parent) changelog file
+   - Default file formats for changelogs and changesets
+   - Naming patterns for generated files
+   - Default author name
+
+### Creating a Changelog
+
+1. Right-click the folder where you'd like to create a changelog  
+2. Select **Liquibase: Create Changelog**  
+3. The changelog file will be created and opened. If a parent changelog is configured, it will be updated automatically.
+
+### Creating a Changeset
+
+1. Right-click the folder where you'd like to create a changeset  
+2. Select **Liquibase: Create Changeset**  
+3. Enter required values based on your naming pattern  
+4. Choose a changelog to associate the new changeset with (optional)  
+5. Choose **Yes** if you want to link all changesets in the folder to this changelog  
+6. The new changeset will be created and opened, along with the associated changelog
+
+### Previewing SQL
+
+1. Open a changeset file  
+2. Press `Ctrl+Shift+P` or click the Liquibase icon in the status bar  
+3. Select **Liquibase: Generate SQL for Changeset**  
+4. Choose the target changeset from the dropdown list  
+5. Select the SQL type:
+   - **Full SQL** – generates all SQL statements, including context or environment-related commands  
+   - **Short SQL** – generates only SQL directly related to the selected changeset  
+6. The generated SQL will open in a new editor tab
 
 
+## Configuration
+
+You can configure the extension in one of the following ways:
+
+- Open **File > Preferences > Settings** or press `Ctrl+,` and search for **Liquibase**
+- Run **Liquibase: Plugin Settings** from the command palette
+
+## Supported Variables in Naming Patterns
+
+Use the following placeholders in naming templates:
+
+- `{author}` – Author name  
+- `{date}` – Current date in the selected format (moment.js)
+- `{name}` – Name for the migration
+- `{ext}` – File extension (based on selected format)  
+- `{object}` – Object name (for object-oriented patterns)  
+- `{release}` – Release version (for release-based workflows)
+
+## Requirements
+
+- Visual Studio Code 1.96.0 or later  
+- Liquibase must be installed and available in the system environment
+
+## Known Issues
+
+- A valid `liquibase.properties` file is required to generate SQL previews
+
+## Release Notes
+
+### 0.0.1
+
+- Initial release with core features:
+  - Support for XML, YAML, and JSON changelog formats
+  - Changelog and changeset creation
+  - SQL generation and preview
