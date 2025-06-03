@@ -224,8 +224,9 @@
   },
   "scripts": {
     "lint": "eslint .",
+    "test": "vscode-test --extensionDevelopmentPath=. --extensionTestsPath=./test/suite",
     "test:unit": "mocha test/unit/**/*.test.js",
-    "coverage": "nyc --reporter=html --reporter=text mocha test/unit/**/*.test.js",
+    "coverage": "nyc --exclude=\"src/intellisense/xml/tagsConfigXml.js\" --exclude=\"src/intellisense/yaml/tagsConfigYaml.js\" --exclude=\"src/intellisense/json/tagsConfigJson.js\" --exclude=\"src/intellisense/yaml/liquibaseTagsYaml.js\" --reporter=html --reporter=text mocha test/unit/**/*.test.js",
     "coverage:report": "nyc report --reporter=html"
   },
   "devDependencies": {
