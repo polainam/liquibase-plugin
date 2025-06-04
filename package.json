@@ -2,6 +2,7 @@
   "name": "liquibase-plugin",
   "displayName": "liquibase-plugin",
   "description": "VSCode extension for Liquibase integration",
+  "publisher": "teralune",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.96.0"
@@ -226,7 +227,7 @@
     "lint": "eslint .",
     "test": "vscode-test --extensionDevelopmentPath=. --extensionTestsPath=./test/suite",
     "test:unit": "mocha test/unit/**/*.test.js",
-    "coverage": "nyc --exclude=\"src/intellisense/xml/tagsConfigXml.js\" --exclude=\"src/intellisense/yaml/tagsConfigYaml.js\" --exclude=\"src/intellisense/json/tagsConfigJson.js\" --exclude=\"src/intellisense/yaml/liquibaseTagsYaml.js\" --reporter=html --reporter=text mocha test/unit/**/*.test.js",
+    "coverage": "nyc --exclude-after-remap --exclude=\"test/**\" --exclude=\"src/intellisense/xml/tagsConfigXml.js\" --exclude=\"src/intellisense/yaml/tagsConfigYaml.js\" --exclude=\"src/intellisense/json/tagsConfigJson.js\" --exclude=\"src/intellisense/yaml/liquibaseTagsYaml.js\" --reporter=html --reporter=text mocha test/unit/**/*.test.js",
     "coverage:report": "nyc report --reporter=html"
   },
   "devDependencies": {
