@@ -66,9 +66,6 @@ Use the following placeholders in naming templates:
 
 - Visual Studio Code 1.96.0 or later  
 - Liquibase must be installed and available in the system environment
-
-## Known Issues
-
 - A valid `liquibase.properties` file is required to generate SQL previews
 
 ## Release Notes

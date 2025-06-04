@@ -1,9 +1,14 @@
 {
-  "name": "Liquibase Fluent",
-  "displayName": "Liquibase Fluent",
+  "name": "liquibase-plugin",
+  "displayName": "Fluent Liquibase",
   "publisher": "teralune",
+  "description": "Simplifies Liquibase usage with automated workflows in VSCode",
   "version": "0.0.1",
   "icon": "media/liqui-image.jpg",
+  "repository": {
+  "type": "git",
+  "url": "https://github.com/polainam/liquibase-plugin"
+  },
   "engines": {
     "vscode": "^1.96.0"
   },
