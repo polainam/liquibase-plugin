@@ -1,9 +1,9 @@
 {
-  "name": "liquibase-plugin",
-  "displayName": "liquibase-plugin",
-  "description": "VSCode extension for Liquibase integration",
+  "name": "Liquibase Fluent",
+  "displayName": "Liquibase Fluent",
   "publisher": "teralune",
   "version": "0.0.1",
+  "icon": "media/liqui-image.jpg",
   "engines": {
     "vscode": "^1.96.0"
   },
