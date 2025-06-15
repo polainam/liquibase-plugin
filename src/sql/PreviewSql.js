@@ -3,7 +3,7 @@ const path = require('path');
 
 const ExtensionCommand = require('../ExtensionCommand');
 
-const { extractChangesetInfoAtCursor, getAllChangesets, isYamlFile, isJsonFile } = require('./extractors/ExtractorFactory');
+const { extractChangesetInfoAtCursor, getAllChangesets, isYamlFile, isJsonFile } = require('./extractors/extractorFactory');
 const { buildTempChangelog } = require('./changeloBuilder');
 const { runLiquibase } = require('./liquibaseRunner');
 const { promptSelectChangeset, promptSelectSqlType } = require('./promptUser');

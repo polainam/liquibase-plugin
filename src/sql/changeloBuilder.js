@@ -1,7 +1,7 @@
 const yaml = require('js-yaml');
 const xml2js = require('xml2js');
 const path = require('path');
-const { findChangeset } = require('./extractors/ExtractorFactory');
+const { findChangeset } = require('./extractors/extractorFactory');
 
 async function buildTempChangelog(content, changesetInfo, filePath, isYaml, isJson) {
   if (isYaml) {

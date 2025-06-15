@@ -1,6 +1,6 @@
 const sinon = require('sinon');
 const assert = require('assert');
-const JsonExtractor = require('../../../../src/sql/extractors/jsonExtractor');
+const JsonExtractor = require('../../../../src/sql/extractors/JsonExtractor');
 
 describe('JsonExtractor', () => {
     let extractor;
